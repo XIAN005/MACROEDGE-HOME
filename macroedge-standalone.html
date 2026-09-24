@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MacroEdge AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e12;
+  --panel:#10161c;
+  --panel-2:#141b22;
+  --line:#212b33;
+  --line-soft:#1a2229;
+  --ink:#e7edf2;
+  --ink-dim:#8ea0ad;
+  --ink-faint:#5c6d78;
+  --up:#3ddc84;
+  --down:#ff5c5c;
+  --amber:#e8a13d;
+  --accent:#3d9bdc;
+  --accent-dim:#1c3b4d;
+  --mono:'IBM Plex Mono', monospace;
+  --disp:'Space Grotesk', sans-serif;
+  --body:'Inter', sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --bg:#f3f5f6; --panel:#ffffff; --panel-2:#f8f9fa; --line:#dde2e5; --line-soft:#e8ebed;
+    --ink:#111820; --ink-dim:#5b6b76; --ink-faint:#8b98a1; --accent-dim:#dceaf4;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a0e12; --panel:#10161c; --panel-2:#141b22; --line:#212b33; --line-soft:#1a2229;
+  --ink:#e7edf2; --ink-dim:#8ea0ad; --ink-faint:#5c6d78; --accent-dim:#1c3b4d;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+*{box-sizing:border-box;}
+body{
+  margin:0; height:100%; background:var(--bg); color:var(--ink);
+  font-family:var(--body); -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent-dim); color:var(--ink);}
+
+/* ---------- SHELL ---------- */
+.shell{max-width:1240px; margin:0 auto; padding:0 20px 60px;}
+.topbar{
+  position:sticky; top:0; z-index:40; background:var(--bg);
+  padding-top:calc(env(safe-area-inset-top,0px) + 14px);
+  border-bottom:1px solid var(--line);
+}
+.topbar-inner{
+  max-width:1240px; margin:0 auto; padding:0 20px 14px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.brand{display:flex; align-items:baseline; gap:10px;}
+.brand-mark{
+  font-family:var(--disp); font-weight:700; font-size:19px; letter-spacing:-0.01em;
+  color:var(--ink);
+}
+.brand-mark span{color:var(--accent);}
+.brand-sub{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); letter-spacing:.04em;}
+.tabs{display:flex; gap:2px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:3px;}
+.tab-btn{
+  font-family:var(--mono); font-size:11.5px; letter-spacing:.02em; color:var(--ink-dim);
+  background:none; border:none; padding:7px 13px; border-radius:6px; cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.tab-btn.active{background:var(--panel); color:var(--ink); box-shadow:0 0 0 1px var(--line);}
+.clock{font-family:var(--mono); font-size:11px; color:var(--ink-faint); text-align:right; min-width:96px;}
+
+.view{display:none; padding-top:22px;}
+.view.active{display:block;}
+
+/* ---------- COMMON ---------- */
+.section-label{
+  font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:.03em;
+  margin:0 0 10px; display:flex; align-items:center; gap:8px;
+}
+.section-label::after{content:''; flex:1; height:1px; background:var(--line);}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:10px;}
+.grid{display:grid; gap:14px;}
+
+/* ---------- DASHBOARD ---------- */
+.regime-banner{
+  display:flex; align-items:center; justify-content:space-between; gap:20px;
+  padding:18px 20px; margin-bottom:18px; flex-wrap:wrap;
+}
+.regime-left{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;}
+.regime-tag{
+  font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); letter-spacing:.03em;
+}
+.regime-name{font-family:var(--disp); font-size:22px; font-weight:600; color:var(--ink);}
+.regime-desc{font-size:13px; color:var(--ink-dim); max-width:520px; line-height:1.5;}
+.refresh-btn{
+  font-family:var(--mono); font-size:11px; color:var(--accent); background:var(--accent-dim);
+  border:1px solid var(--accent-dim); padding:8px 14px; border-radius:7px; cursor:pointer;
+  white-space:nowrap;
+}
+.refresh-btn:hover{filter:brightness(1.15);}
+.updated-at{font-family:var(--mono); font-size:10px; color:var(--ink-faint); margin-top:6px;}
+
+.ticker-row{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px;
+}
+.ticker{background:var(--panel); padding:14px 16px;}
+.ticker-sym{font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:.02em;}
+.ticker-val{font-family:var(--disp); font-size:19px; font-weight:600; margin-top:4px; color:var(--ink);}
+.ticker-chg{font-family:var(--mono); font-size:11.5px; margin-top:3px;}
+.chg-up{color:var(--up);} .chg-down{color:var(--down);} .chg-flat{color:var(--ink-faint);}
+
+.dash-grid{grid-template-columns:1.3fr 1fr;}
+@media (max-width:860px){ .dash-grid{grid-template-columns:1fr;} }
+
+.panel-pad{padding:18px 20px;}
+.panel-title{font-family:var(--disp); font-size:15px; font-weight:600; margin:0 0 4px;}
+.panel-hint{font-size:12px; color:var(--ink-faint); margin:0 0 14px;}
+
+/* Edge Factor gauge */
+.edge-wrap{display:flex; align-items:center; gap:22px; flex-wrap:wrap;}
+.gauge{position:relative; width:132px; height:132px; flex-shrink:0;}
+.gauge svg{transform:rotate(-90deg);}
+.gauge-track{fill:none; stroke:var(--line-soft); stroke-width:10;}
+.gauge-fill{fill:none; stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset .6s ease;}
+.gauge-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.gauge-score{font-family:var(--disp); font-size:30px; font-weight:700;}
+.gauge-max{font-family:var(--mono); font-size:10px; color:var(--ink-faint);}
+.edge-detail{flex:1; min-width:200px;}
+.edge-verdict{font-family:var(--disp); font-size:16px; font-weight:600; margin-bottom:6px;}
+.edge-sub{font-size:12.5px; color:var(--ink-dim); line-height:1.55;}
+.edge-components{margin-top:14px; display:flex; flex-direction:column; gap:8px;}
+.edge-comp-row{display:flex; align-items:center; gap:10px;}
+.edge-comp-label{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); width:88px; flex-shrink:0;}
+.edge-comp-bar{flex:1; height:5px; background:var(--line-soft); border-radius:3px; overflow:hidden;}
+.edge-comp-fill{height:100%; border-radius:3px;}
+.edge-comp-val{font-family:var(--mono); font-size:10.5px; color:var(--ink-dim); width:34px; text-align:right;}
+
+/* calendar */
+.cal-list{display:flex; flex-direction:column;}
+.cal-item{
+  display:grid; grid-template-columns:52px 1fr auto; gap:12px; align-items:center;
+  padding:11px 0; border-bottom:1px solid var(--line-soft);
+}
+.cal-item:last-child{border-bottom:none;}
+.cal-time{font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);}
+.cal-event{font-size:13px; color:var(--ink);}
+.cal-country{font-family:var(--mono); font-size:10px; color:var(--ink-faint); margin-right:6px;}
+.impact-dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px;}
+.impact-high{background:var(--down);} .impact-med{background:var(--amber);} .impact-low{background:var(--ink-faint);}
+.cal-actual{font-family:var(--mono); font-size:11.5px; text-align:right; color:var(--ink-dim); white-space:nowrap;}
+
+/* bias grid */
+.bias-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+.bias-cell{background:var(--panel); padding:15px 16px;}
+.bias-asset{font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-bottom:8px;}
+.bias-dir{font-family:var(--disp); font-size:15px; font-weight:600; display:flex; align-items:center; gap:7px;}
+.arrow-up{color:var(--up);} .arrow-down{color:var(--down);} .arrow-flat{color:var(--ink-faint);}
+.bias-note{font-size:11.5px; color:var(--ink-dim); margin-top:6px; line-height:1.45;}
+
+.intermarket{padding:16px 18px; font-size:13px; color:var(--ink-dim); line-height:1.6;}
+.intermarket b{color:var(--ink); font-weight:600;}
+
+/* ---------- FORM / GENERATOR ---------- */
+.gen-layout{display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;}
+@media (max-width:860px){ .gen-layout{grid-template-columns:1fr;} }
+.form-group{margin-bottom:16px;}
+.form-label{font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:.02em; display:block; margin-bottom:7px;}
+.seg-control{display:flex; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden;}
+.seg-btn{
+  flex:1; background:var(--panel-2); border:none; color:var(--ink-dim); font-family:var(--mono);
+  font-size:11.5px; padding:9px 6px; cursor:pointer; transition:background .15s,color .15s;
+}
+.seg-btn.active{background:var(--accent-dim); color:var(--accent);}
+textarea, input[type=text], select{
+  width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--ink);
+  border-radius:8px; padding:11px 13px; font-family:var(--body); font-size:13.5px;
+  resize:vertical; outline:none;
+}
+textarea{min-height:110px; line-height:1.5;}
+textarea:focus, input:focus, select:focus{border-color:var(--accent);}
+.gen-btn{
+  width:100%; background:var(--accent); color:#08141c; border:none; border-radius:8px;
+  font-family:var(--disp); font-weight:600; font-size:14px; padding:13px; cursor:pointer;
+  margin-top:4px;
+}
+.gen-btn:disabled{opacity:.5; cursor:default;}
+.gen-btn:hover:not(:disabled){filter:brightness(1.08);}
+
+.output-panel{min-height:340px; display:flex; flex-direction:column;}
+.output-empty{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--ink-faint); font-size:12.5px; text-align:center; padding:40px 20px; gap:8px;}
+.output-body{padding:18px 20px; font-size:13.5px; line-height:1.65; white-space:pre-wrap;}
+.output-body strong{color:var(--ink);}
+.output-actions{display:flex; gap:10px; padding:0 20px 18px;}
+.mini-btn{
+  font-family:var(--mono); font-size:11px; color:var(--ink-dim); background:var(--panel-2);
+  border:1px solid var(--line); padding:8px 13px; border-radius:7px; cursor:pointer;
+}
+.mini-btn:hover{color:var(--ink); border-color:var(--ink-faint);}
+.loading-dots{font-family:var(--mono); font-size:12px; color:var(--ink-faint);}
+.badge-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+.badge{font-family:var(--mono); font-size:10.5px; padding:4px 9px; border-radius:5px; border:1px solid var(--line);}
+.badge-impact-Élevé{color:var(--down); border-color:var(--down);}
+.badge-impact-Moyen{color:var(--amber); border-color:var(--amber);}
+.badge-impact-Faible{color:var(--ink-faint);}
+
+/* ---------- JOURNAL ---------- */
+.journal-header{display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:16px; flex-wrap:wrap;}
+.journal-stats{display:flex; gap:22px; flex-wrap:wrap;}
+.jstat{font-family:var(--mono);}
+.jstat-label{font-size:10px; color:var(--ink-faint);}
+.jstat-val{font-size:17px; font-weight:600; color:var(--ink); font-family:var(--disp);}
+.add-trade-btn{
+  font-family:var(--mono); font-size:11.5px; color:#08141c; background:var(--accent);
+  border:none; padding:9px 16px; border-radius:7px; cursor:pointer;
+}
+.trade-table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
+table.trades{width:100%; border-collapse:collapse; min-width:760px;}
+table.trades th{
+  text-align:left; font-family:var(--mono); font-size:10.5px; color:var(--ink-faint);
+  padding:11px 14px; border-bottom:1px solid var(--line); background:var(--panel-2); white-space:nowrap;
+}
+table.trades td{padding:11px 14px; border-bottom:1px solid var(--line-soft); font-size:12.5px; white-space:nowrap;}
+table.trades tr:last-child td{border-bottom:none;}
+.pnl-pos{color:var(--up); font-family:var(--mono);}
+.pnl-neg{color:var(--down); font-family:var(--mono);}
+.dir-long{color:var(--up); font-family:var(--mono); font-size:11px;}
+.dir-short{color:var(--down); font-family:var(--mono); font-size:11px;}
+.status-open{color:var(--amber); font-family:var(--mono); font-size:11px;}
+.status-closed{color:var(--ink-faint); font-family:var(--mono); font-size:11px;}
+.del-btn{background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:14px; padding:2px 6px;}
+.del-btn:hover{color:var(--down);}
+.journal-empty{padding:50px 20px; text-align:center; color:var(--ink-faint); font-size:13px;}
+
+/* modal */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:flex-end;
+  justify-content:center; z-index:100; backdrop-filter:blur(2px);
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--panel); border:1px solid var(--line); border-radius:14px 14px 0 0;
+  width:100%; max-width:480px; padding:22px 22px calc(22px + env(safe-area-inset-bottom,0px));
+  max-height:88vh; overflow-y:auto;
+}
+@media(min-width:640px){
+  .modal-overlay{align-items:center;}
+  .modal{border-radius:14px; margin-bottom:0;}
+}
+.modal-title{font-family:var(--disp); font-size:17px; font-weight:600; margin:0 0 16px;}
+.modal-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.modal-actions{display:flex; gap:10px; margin-top:18px;}
+.modal-actions .gen-btn{margin-top:0;}
+.cancel-btn{
+  flex:1; background:var(--panel-2); border:1px solid var(--line); color:var(--ink-dim);
+  border-radius:8px; font-family:var(--body); font-size:13.5px; padding:12px; cursor:pointer;
+}
+
+.foot-note{font-size:11px; color:var(--ink-faint); margin-top:26px; line-height:1.6; padding-top:16px; border-top:1px solid var(--line);}
+
+.stale-banner{
+  display:flex; align-items:center; gap:10px; background:var(--accent-dim);
+  border:1px solid var(--accent); border-radius:8px; padding:11px 15px; margin-bottom:16px;
+  font-size:12.5px; color:var(--ink);
+}
+.stale-banner b{white-space:nowrap;}
+.data-age{font-family:var(--mono); font-size:10px; color:var(--ink-faint); margin-top:3px;}
+.gen-disclaimer{
+  font-size:11.5px; color:var(--ink-faint); background:var(--panel-2); border:1px solid var(--line);
+  border-radius:8px; padding:10px 13px; margin-top:14px; line-height:1.5;
+}
+.consent-note{font-size:11px; color:var(--ink-faint); margin-top:8px;}
+.err-box{
+  background:rgba(255,92,92,.08); border:1px solid var(--down); border-radius:8px;
+  padding:12px 14px; font-size:12.5px; color:var(--down); margin:0 0 12px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">MACRO<span>EDGE</span></div>
+      <div class="brand-sub">AI DESK</div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab-btn active" data-view="dashboard">DASHBOARD</button>
+      <button class="tab-btn" data-view="generator">GÉNÉRATEUR</button>
+      <button class="tab-btn" data-view="journal">JOURNAL</button>
+      <button class="tab-btn" data-view="settings">RÉGLAGES</button>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <div class="view active" id="view-dashboard">
+
+    <div class="card" style="padding:12px 20px; margin-bottom:14px; border-color:var(--amber); background:linear-gradient(0deg,var(--panel),var(--panel));">
+      <div style="font-family:var(--mono); font-size:11.5px; color:var(--amber); line-height:1.6;" id="topBannerText">
+        ⚠ Configure Twelve Data dans Réglages pour des prix live. Sans clé, les chiffres affichés sont un instantané figé du 23/09/2026.
+      </div>
+    </div>
+
+    <div class="card regime-banner">
+      <div class="regime-left">
+        <div>
+          <div class="regime-tag">RÉGIME MACRO — lecture qualitative, non automatisée</div>
+          <div class="regime-name">Reflation Hawkish / Resserrement Tardif</div>
+        </div>
+        <div class="regime-desc">Fed en cycle de hausse renouvelé (3,75–4,00%) malgré un ralentissement de l'inflation énergétique. Dollar et taux longs tirés par un repricing hawkish, contrebalancés par une désescalade géopolitique sur l'Iran qui comprime la prime de risque pétrole/or.</div>
+        <div class="updated-at" id="updatedAt">Snapshot du : —</div>
+        <div class="updated-at" id="dashSourceBanner" style="margin-top:2px;">—</div>
+      </div>
+      <button class="refresh-btn" id="refreshBtn">↻ ACTUALISER</button>
+    </div>
+
+    <div class="ticker-row" id="tickerRow"></div>
+
+    <div class="grid dash-grid">
+      <div class="grid" style="gap:14px;">
+
+        <div class="card">
+          <div class="panel-pad" style="padding-bottom:6px;">
+            <div class="panel-title">Edge Factor</div>
+            <div class="panel-hint">Score composite d'alignement macro / momentum / positionnement — 0 à 100. <span style="color:var(--ink-faint);">Lecture qualitative, non recalculée automatiquement.</span></div>
+          </div>
+          <div class="panel-pad" style="padding-top:6px;">
+            <div class="edge-wrap">
+              <div class="gauge">
+                <svg viewBox="0 0 132 132" width="132" height="132">
+                  <circle class="gauge-track" cx="66" cy="66" r="54"></circle>
+                  <circle class="gauge-fill" id="gaugeFill" cx="66" cy="66" r="54"
+                    stroke="var(--amber)" stroke-dasharray="339.3" stroke-dashoffset="339.3"></circle>
+                </svg>
+                <div class="gauge-center">
+                  <div class="gauge-score" id="gaugeScore">62</div>
+                  <div class="gauge-max">/ 100</div>
+                </div>
+              </div>
+              <div class="edge-detail">
+                <div class="edge-verdict" id="edgeVerdict">Conviction Modérée — Dollar Hawkish</div>
+                <div class="edge-sub" id="edgeSub">L'alignement entre le repricing des taux Fed, la force du DXY et la compression de la prime de risque géopolitique favorise un biais USD long tactique, tempéré par un positionnement déjà étiré sur le long dollar.</div>
+                <div class="edge-components">
+                  <div class="edge-comp-row"><span class="edge-comp-label">POLITIQUE MON.</span><div class="edge-comp-bar"><div class="edge-comp-fill" style="width:78%;background:var(--up);"></div></div><span class="edge-comp-val">78</span></div>
+                  <div class="edge-comp-row"><span class="edge-comp-label">MOMENTUM</span><div class="edge-comp-bar"><div class="edge-comp-fill" style="width:64%;background:var(--amber);"></div></div><span class="edge-comp-val">64</span></div>
+                  <div class="edge-comp-row"><span class="edge-comp-label">GÉOPOLITIQUE</span><div class="edge-comp-bar"><div class="edge-comp-fill" style="width:41%;background:var(--down);"></div></div><span class="edge-comp-val">41</span></div>
+                  <div class="edge-comp-row"><span class="edge-comp-label">POSITIONNEMENT</span><div class="edge-comp-bar"><div class="edge-comp-fill" style="width:55%;background:var(--amber);"></div></div><span class="edge-comp-val">55</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="panel-pad" style="padding-bottom:10px;">
+            <div class="panel-title">Biais Synthétique par Actif</div>
+            <div class="panel-hint" style="margin-bottom:0;">Lecture qualitative, non recalculée automatiquement.</div>
+          </div>
+          <div class="bias-grid" id="biasGrid"></div>
+        </div>
+
+        <div class="card intermarket">
+          <div class="section-label" style="margin-bottom:8px;">PRESSION INTER-MARCHÉS</div>
+          <b>Divergence taux/or :</b> le repricing hawkish (10Y ~4,96%) n'a pas cassé le régime haussier structurel de l'or (+15% sur 12 mois) — la demande officielle chinoise et l'incertitude géopolitique résiduelle absorbent la pression des taux réels.
+          <br><br>
+          <b>Pétrole vs inflation :</b> le Brent chute (6e séance de baisse consécutive) sur désescalade Iran, ce qui retire un argument haussier à la Fed — à surveiller si cela infléchit le discours des gouverneurs cette semaine.
+          <br><br>
+          <b>Dollar vs risque :</b> le DXY monte pendant que les indices actions US restent proches de leurs records — corrélation positive USD/risque inhabituelle, cohérente avec un narratif de rareté relative de croissance US plutôt que d'aversion au risque globale.
+        </div>
+
+      </div>
+
+      <div class="grid" style="gap:14px;">
+        <div class="card">
+          <div class="panel-pad" style="padding-bottom:6px;">
+            <div class="panel-title">Calendrier Économique — Cette semaine</div>
+          </div>
+          <div class="panel-pad" style="padding-top:4px;">
+            <div class="cal-list" id="calList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot-note">
+      Prix de marché : Twelve Data en direct si configuré dans Réglages, sinon instantané figé. Calendrier économique : Finnhub ou repli gratuit ForexFactory. Le score Edge Factor, le biais synthétique par actif et la lecture inter-marchés restent une analyse qualitative rédigée manuellement — ils ne sont pas recalculés automatiquement à partir des prix live. Analyse fournie à titre informatif — ne constitue pas un conseil en investissement.
+    </div>
+  </div>
+
+  <!-- ===================== GENERATOR ===================== -->
+  <div class="view" id="view-generator">
+    <div class="section-label">GÉNÉRATEUR D'ANALYSE</div>
+    <div class="gen-layout">
+      <div class="card panel-pad">
+        <div class="form-group">
+          <label class="form-label">TYPE D'ENTRÉE</label>
+          <div class="seg-control" id="typeSeg">
+            <button class="seg-btn active" data-type="flash">Flash News</button>
+            <button class="seg-btn" data-type="calendar">Calendrier Éco</button>
+            <button class="seg-btn" data-type="brief">Pre-Market Brief</button>
+          </div>
+        </div>
+        <div class="form-group" id="inputGroup">
+          <label class="form-label" id="inputLabel">TITRE / DÉCLARATION</label>
+          <textarea id="genInput" placeholder="Ex: Fed's Barkin: further rate hikes may be needed as supply shocks aren't proving short-lived"></textarea>
+        </div>
+        <button class="gen-btn" id="genBtn">GÉNÉRER L'ANALYSE</button>
+        <div class="gen-disclaimer" id="genDisclaimer">
+          Cette analyse est générée par un vrai appel à Claude via <b style="color:var(--ink);">ton relais API personnel</b> — configure-le dans l'onglet Réglages. Claude n'a pas accès au web : colle le texte complet du titre/chiffre, pas juste un mot-clé.
+        </div>
+      </div>
+
+      <div class="card output-panel">
+        <div id="outputEmpty" class="output-empty">
+          <div style="font-family:var(--mono); font-size:22px;">▤</div>
+          <div>Sélectionne un type d'entrée, colle ton titre ou ton chiffre, puis génère.<br>Le résultat suivra le format institutionnel MacroEdge.</div>
+        </div>
+        <div id="outputContent" style="display:none;">
+          <div class="panel-pad" style="padding-bottom:0;">
+            <div class="badge-row" id="outputBadges"></div>
+          </div>
+          <div class="output-body" id="outputBody"></div>
+          <div class="output-actions">
+            <button class="mini-btn" id="saveToJournalBtn">+ AJOUTER AU JOURNAL</button>
+            <button class="mini-btn" id="copyOutputBtn">COPIER</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== JOURNAL ===================== -->
+  <div class="view" id="view-journal">
+    <div class="journal-header">
+      <div class="journal-stats">
+        <div class="jstat"><div class="jstat-label">TRADES</div><div class="jstat-val" id="statCount">0</div></div>
+        <div class="jstat"><div class="jstat-label">WIN RATE</div><div class="jstat-val" id="statWinrate">—</div></div>
+        <div class="jstat"><div class="jstat-label">PNL CUMULÉ</div><div class="jstat-val" id="statPnl">—</div></div>
+      </div>
+      <button class="add-trade-btn" id="addTradeBtn">+ NOUVELLE ENTRÉE</button>
+    </div>
+
+    <div class="trade-table-wrap">
+      <table class="trades">
+        <thead>
+          <tr>
+            <th>DATE</th><th>ACTIF</th><th>SENS</th><th>ENTRÉE</th><th>SORTIE</th>
+            <th>PNL (%)</th><th>STATUT</th><th>THÈSE MACRO</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="journalBody"></tbody>
+      </table>
+      <div class="journal-empty" id="journalEmpty" style="display:none;">Aucune entrée pour l'instant. Ajoute ton premier trade ou sauvegarde une analyse depuis le générateur.</div>
+    </div>
+  </div>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <div class="view" id="view-settings">
+    <div class="section-label">RÉGLAGES — RELAIS API</div>
+    <div class="card panel-pad" style="max-width:560px;">
+      <div class="panel-title">Connexion au générateur IA</div>
+      <div class="panel-hint">
+        Le générateur appelle l'IA de ton choix via un petit serveur relais que tu héberges toi-même (gratuit, ~5 min sur Vercel). Ta clé API n'est jamais envoyée ailleurs qu'à CE relais, et rien n'est envoyé au fournisseur choisi tant que l'URL du relais et la clé API ne sont pas renseignées et enregistrées.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">FOURNISSEUR IA</label>
+        <select id="cfgProvider">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI (GPT)</option>
+          <option value="gemini">Google (Gemini)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">URL DE TON RELAIS</label>
+        <input type="text" id="cfgRelayUrl" placeholder="https://ton-projet.vercel.app/api/analyze">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">CLÉ API</label>
+        <input type="text" id="cfgApiKey" placeholder="sk-ant-... / sk-... / AIza...">
+        <div class="consent-note">Stockée uniquement dans le stockage local de CE navigateur (localStorage). Jamais transmise à Claude, jamais loggée ailleurs que dans les requêtes vers ton propre relais.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">MODÈLE (optionnel — laisse vide pour le défaut)</label>
+        <input type="text" id="cfgModel" placeholder="Ex: claude-sonnet-4-5-20250929 / gpt-4o / gemini-2.0-flash">
+      </div>
+
+      <button class="gen-btn" id="cfgSaveBtn">Enregistrer</button>
+      <div id="cfgSaveMsg" class="consent-note" style="display:none; color:var(--up);">Réglages enregistrés ✓</div>
+
+      <div class="form-group" style="margin-top:22px;">
+        <button class="mini-btn" id="cfgTestBtn">TESTER LA CONNEXION</button>
+        <div id="cfgTestResult" style="margin-top:10px; font-size:12.5px;"></div>
+      </div>
+    </div>
+
+    <div class="card panel-pad" style="max-width:560px; margin-top:16px;">
+      <div class="panel-title" style="font-size:13.5px;">Pas encore de relais déployé ?</div>
+      <div class="panel-hint" style="margin-bottom:0;">
+        Le code du relais (une fonction serverless, à déployer gratuitement sur Vercel) et les instructions t'ont été fournis à côté de ce fichier HTML — dossier <code style="font-family:var(--mono);background:var(--panel-2);padding:2px 5px;border-radius:4px;">macroedge-relay/</code>, fichier README.md.
+      </div>
+    </div>
+
+    <div class="card panel-pad" style="max-width:560px; margin-top:16px;">
+      <div class="panel-title">Données de marché live</div>
+      <div class="panel-hint">
+        Utilise la <b style="color:var(--ink);">même URL de relais</b> que ci-dessus (un seul relais gère l'IA et les données de marché). Prix (or, pétrole, forex...) via <b style="color:var(--ink);">Twelve Data</b> (gratuit, clé requise, 800 requêtes/jour). Calendrier économique via <b style="color:var(--ink);">Finnhub</b> si tu as une clé compatible ; sinon repli automatique et gratuit sur le flux public ForexFactory, sans clé.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">CLÉ TWELVE DATA</label>
+        <input type="text" id="cfgTwelveKey" placeholder="Clé Twelve Data (gratuite sur twelvedata.com)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">CLÉ FINNHUB (optionnelle)</label>
+        <input type="text" id="cfgFinnhubKey" placeholder="Laisse vide pour utiliser le calendrier gratuit ForexFactory">
+      </div>
+
+      <button class="gen-btn" id="cfgDataSaveBtn">Enregistrer</button>
+      <div id="cfgDataSaveMsg" class="consent-note" style="display:none; color:var(--up);">Réglages enregistrés ✓</div>
+
+      <div class="form-group" style="margin-top:22px;">
+        <button class="mini-btn" id="cfgDataTestBtn">TESTER LES DONNÉES DE MARCHÉ</button>
+        <div id="cfgDataTestResult" style="margin-top:10px; font-size:12.5px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL: add trade -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title">Nouvelle entrée journal</div>
+    <div class="form-group">
+      <label class="form-label">ACTIF</label>
+      <input type="text" id="mAsset" placeholder="Ex: EUR/USD, Gold, US10Y...">
+    </div>
+    <div class="modal-row">
+      <div class="form-group">
+        <label class="form-label">SENS</label>
+        <select id="mDir"><option value="Long">Long</option><option value="Short">Short</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">STATUT</label>
+        <select id="mStatus"><option value="Ouvert">Ouvert</option><option value="Clôturé">Clôturé</option></select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="form-group">
+        <label class="form-label">PRIX ENTRÉE</label>
+        <input type="text" id="mEntry" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">PRIX SORTIE</label>
+        <input type="text" id="mExit" placeholder="—">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">PNL (%)</label>
+      <input type="text" id="mPnl" placeholder="Ex: 1.2 ou -0.8">
+    </div>
+    <div class="form-group">
+      <label class="form-label">THÈSE MACRO</label>
+      <textarea id="mThesis" style="min-height:70px;" placeholder="Ex: Long USD sur repricing hawkish Fed + compression prime risque Iran"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel-btn" id="modalCancel">Annuler</button>
+      <button class="gen-btn" id="modalSave" style="flex:1;">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- STATE (localStorage, per-viewer) ---------------- */
+const STORAGE_KEY = "macroedge_journal_v1";
+
+function loadJournal(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveJournal(entries){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }catch(e){}
+}
+let journal = loadJournal();
+
+/* ---------------- TABS ---------------- */
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.tab-btn');
+  if(!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const v = btn.dataset.view;
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+});
+
+/* ---------------- CLOCK ---------------- */
+function tick(){
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+tick(); setInterval(tick, 1000);
+/* ---------------- SETTINGS (market data config) — declared early so dashboard load can use it ---------------- */
+// L'URL du relais est partagée avec la config IA (une seule clé localStorage pour l'URL, "macroedge_relay_url").
+const RELAY_URL_KEY = "macroedge_relay_url";
+const DATA_CFG_KEY = "macroedge_data_cfg_v1";
+function loadRelayUrl(){
+  try{ return localStorage.getItem(RELAY_URL_KEY) || ""; }catch(e){ return ""; }
+}
+function saveRelayUrl(url){
+  try{ localStorage.setItem(RELAY_URL_KEY, url); }catch(e){}
+}
+function loadDataCfg(){
+  try{ return JSON.parse(localStorage.getItem(DATA_CFG_KEY)) || {twelveKey:"", finnhubKey:""}; }
+  catch(e){ return {twelveKey:"", finnhubKey:""}; }
+}
+function saveDataCfg(cfg){
+  try{ localStorage.setItem(DATA_CFG_KEY, JSON.stringify(cfg)); }catch(e){}
+}
+let dataCfg = loadDataCfg();
+dataCfg.url = loadRelayUrl(); // toujours dérivée de l'URL partagée, jamais stockée en double
+document.getElementById('cfgTwelveKey').value = dataCfg.twelveKey || "";
+document.getElementById('cfgFinnhubKey').value = dataCfg.finnhubKey || "";
+document.getElementById('cfgDataSaveBtn').addEventListener('click', ()=>{
+  dataCfg = {
+    url: loadRelayUrl(), // toujours celle du champ IA — pas de saisie séparée
+    twelveKey: document.getElementById('cfgTwelveKey').value.trim(),
+    finnhubKey: document.getElementById('cfgFinnhubKey').value.trim()
+  };
+  saveDataCfg({twelveKey: dataCfg.twelveKey, finnhubKey: dataCfg.finnhubKey});
+  const msg = document.getElementById('cfgDataSaveMsg');
+  msg.style.display = 'block';
+  setTimeout(()=>msg.style.display='none', 2000);
+  loadDashboard();
+});
+
+/* ---------------- DASHBOARD DATA ---------------- */
+// Snapshot de secours utilisé si aucune clé Twelve Data n'est configurée,
+// ou si l'appel échoue. Capturé par recherche web le 23/09/2026.
+const FALLBACK_SNAPSHOT_LABEL = "23/09/2026 (recherche web ~14h UTC) — snapshot figé";
+const FALLBACK_TICKERS = [
+  {sym:"USD/JPY", val:"157.5", chg:"+0.10%", dir:"up"},
+  {sym:"EUR/USD", val:"1.168", chg:"-0.33%", dir:"down"},
+  {sym:"XAU/USD", val:"4 314", chg:"-1.14%", dir:"down"},
+  {sym:"WTI/USD", val:"~90.0", chg:"-0.60%", dir:"down"},
+];
+const FALLBACK_CALENDAR = [
+  {time:"MER 14:30", country:"US", event:"Ventes de logements neufs (Août)", impact:"low", actual:"—"},
+  {time:"MER 18:00", country:"US", event:"Discours Fed — Musalem (hawkish attendu)", impact:"med", actual:"—"},
+  {time:"JEU 14:30", country:"US", event:"Demandes d'allocations chômage", impact:"med", actual:"Prév. 235K"},
+  {time:"VEN 14:30", country:"US", event:"PCE Core (indicateur préféré Fed)", impact:"high", actual:"Prév. 2,9% YoY"},
+];
+const biases = [
+  {asset:"DXY", dir:"up", note:"Repricing hawkish Fed + spread de taux favorable."},
+  {asset:"EUR/USD", dir:"down", note:"Faiblesse structurelle vs USD, BCE stable en attentisme."},
+  {asset:"Gold (XAU)", dir:"flat", note:"Tiraillé entre taux réels ↑ et demande officielle/géopolitique."},
+  {asset:"US10Y Yield", dir:"down", note:"Détente tactique post-hausse, désescalade Iran réduit la prime inflation."},
+  {asset:"WTI/Brent", dir:"down", note:"6e séance de baisse — dégel diplomatique Iran, offre Saoudienne qui revient."},
+  {asset:"S&P 500", dir:"flat", note:"Records proches, mais vigilance sur 'higher for longer' et sommet Trump-Xi."},
+];
+
+const QUOTE_SYMBOLS = ["EUR/USD","USD/JPY","XAU/USD","WTI/USD"]; // adaptable — Twelve Data ne fournit pas DXY/US10Y directement sur le plan gratuit
+
+async function fetchQuotes(){
+  if(!dataCfg.url || !dataCfg.twelveKey) return null;
+  try{
+    const url = dataCfg.url + "?action=quotes&apiKey=" + encodeURIComponent(dataCfg.twelveKey) + "&symbols=" + encodeURIComponent(QUOTE_SYMBOLS.join(','));
+    const r = await fetch(url);
+    const data = await r.json();
+    if(!r.ok || !data.quotes) return null;
+    return data.quotes;
+  }catch(e){ return null; }
+}
+
+async function fetchCalendar(){
+  if(!dataCfg.url) return null; // le calendrier peut fonctionner même sans clé Finnhub (fallback ForexFactory), mais il faut au moins l'URL du relais
+  try{
+    const url = dataCfg.url + "?action=calendar" + (dataCfg.finnhubKey ? "&apiKey=" + encodeURIComponent(dataCfg.finnhubKey) : "");
+    const r = await fetch(url);
+    const data = await r.json();
+    if(!r.ok || !Array.isArray(data.events)) return null;
+    return { events: data.events, source: data.source || 'inconnue' };
+  }catch(e){ return null; }
+}
+
+function renderTickersFromLive(quotes){
+  const row = document.getElementById('tickerRow');
+  row.innerHTML = quotes.map(q=>{
+    if(!q.ok){
+      return `<div class="ticker"><div class="ticker-sym">${q.symbol}</div><div class="ticker-val" style="color:var(--ink-faint); font-size:13px;">indispo.</div></div>`;
+    }
+    const dir = q.change > 0 ? 'up' : (q.change < 0 ? 'down' : 'flat');
+    const cls = dir==='up'?'chg-up':(dir==='down'?'chg-down':'chg-flat');
+    const arrow = dir==='up'?'▲':(dir==='down'?'▼':'—');
+    return `<div class="ticker">
+      <div class="ticker-sym">${q.symbol}</div>
+      <div class="ticker-val">${q.price.toLocaleString('fr-FR',{maximumFractionDigits:4})}</div>
+      <div class="ticker-chg ${cls}">${arrow} ${q.percent_change>=0?'+':''}${q.percent_change.toFixed(2)}%</div>
+      <div style="font-family:var(--mono); font-size:9px; color:var(--ink-faint); margin-top:5px;">Twelve Data · live</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTickersFallback(){
+  const row = document.getElementById('tickerRow');
+  row.innerHTML = FALLBACK_TICKERS.map(t=>{
+    const cls = t.dir==='up'?'chg-up':(t.dir==='down'?'chg-down':'chg-flat');
+    const arrow = t.dir==='up'?'▲':(t.dir==='down'?'▼':'—');
+    return `<div class="ticker">
+      <div class="ticker-sym">${t.sym}</div>
+      <div class="ticker-val">${t.val}</div>
+      <div class="ticker-chg ${cls}">${arrow} ${t.chg}</div>
+      <div style="font-family:var(--mono); font-size:9px; color:var(--ink-faint); margin-top:5px;">Snapshot figé</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCalendarFromLive(events){
+  const list = document.getElementById('calList');
+  const upcoming = events
+    .filter(e=>e.event)
+    .slice(0, 10);
+  if(upcoming.length === 0){ renderCalendarFallback(); return; }
+  list.innerHTML = upcoming.map(e=>{
+    const impact = (e.impact||'low').toLowerCase();
+    const dotClass = impact==='high'?'impact-high':(impact==='medium'||impact==='med'?'impact-med':'impact-low');
+    let timeLabel = '—';
+    try{
+      const d = new Date(e.datetime);
+      if(!isNaN(d)) timeLabel = d.toLocaleString('fr-FR',{weekday:'short',hour:'2-digit',minute:'2-digit'}).toUpperCase();
+    }catch(err){}
+    const actualStr = e.actual != null ? `Act: ${e.actual}` : (e.forecast != null ? `Prév: ${e.forecast}` : '—');
+    return `<div class="cal-item">
+      <div class="cal-time">${timeLabel}</div>
+      <div class="cal-event"><span class="impact-dot ${dotClass}"></span><span class="cal-country">${e.country}</span>${e.event}</div>
+      <div class="cal-actual">${actualStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCalendarFallback(){
+  const list = document.getElementById('calList');
+  list.innerHTML = FALLBACK_CALENDAR.map(c=>{
+    const dotClass = c.impact==='high'?'impact-high':(c.impact==='med'?'impact-med':'impact-low');
+    return `<div class="cal-item">
+      <div class="cal-time">${c.time}</div>
+      <div class="cal-event"><span class="impact-dot ${dotClass}"></span><span class="cal-country">${c.country}</span>${c.event}</div>
+      <div class="cal-actual">${c.actual}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderBias(){
+  const grid = document.getElementById('biasGrid');
+  grid.innerHTML = biases.map(b=>{
+    const arrowClass = b.dir==='up'?'arrow-up':(b.dir==='down'?'arrow-down':'arrow-flat');
+    const arrow = b.dir==='up'?'↑ BULLISH':(b.dir==='down'?'↓ BEARISH':'→ NEUTRE');
+    return `<div class="bias-cell">
+      <div class="bias-asset">${b.asset}</div>
+      <div class="bias-dir ${arrowClass}">${arrow}</div>
+      <div class="bias-note">${b.note}</div>
+    </div>`;
+  }).join('');
+}
+renderBias();
+
+/* Edge factor gauge animation (score qualitatif, non recalculé automatiquement pour l'instant) */
+(function(){
+  const score = 62;
+  const circumference = 2 * Math.PI * 54;
+  const offset = circumference - (score/100)*circumference;
+  const fill = document.getElementById('gaugeFill');
+  fill.setAttribute('stroke-dasharray', circumference.toFixed(1));
+  requestAnimationFrame(()=>{ fill.style.strokeDashoffset = offset.toFixed(1); });
+  const color = score>=70?'var(--up)':(score>=45?'var(--amber)':'var(--down)');
+  fill.setAttribute('stroke', color);
+})();
+
+async function loadDashboard(){
+  const banner = document.getElementById('dashSourceBanner');
+  const topBanner = document.getElementById('topBannerText');
+  if(!dataCfg.url || !dataCfg.twelveKey){
+    renderTickersFallback();
+    renderCalendarFallback();
+    document.getElementById('updatedAt').textContent = "Snapshot du : " + FALLBACK_SNAPSHOT_LABEL;
+    if(banner) banner.textContent = "📌 Données figées — configure Twelve Data dans Réglages pour du live.";
+    if(topBanner) topBanner.innerHTML = '⚠ Configure Twelve Data dans Réglages pour des prix live. Sans clé, les chiffres affichés sont un instantané figé du <b>23/09/2026</b>.';
+    return;
+  }
+  if(banner) banner.textContent = "⏳ Récupération des données live…";
+  const [quotes, calendarResult] = await Promise.all([fetchQuotes(), fetchCalendar()]);
+  const events = calendarResult?.events || null;
+  const calSource = calendarResult?.source || null;
+
+  if(quotes && quotes.length){
+    renderTickersFromLive(quotes);
+  } else {
+    renderTickersFallback();
+  }
+  if(events && events.length){
+    renderCalendarFromLive(events);
+  } else {
+    renderCalendarFallback();
+  }
+  const now = new Date().toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('updatedAt').textContent = "Dernière actualisation live : " + now;
+  if(banner){
+    const src = calSource ? (calSource==='finnhub' ? 'Finnhub' : 'ForexFactory (gratuit)') : '—';
+    banner.textContent = (quotes ? "✅ Prix : Twelve Data live" : "⚠️ Prix indisponibles, snapshot figé utilisé") + " · Calendrier : " + src;
+  }
+  if(topBanner){
+    topBanner.style.color = 'var(--up)';
+    topBanner.innerHTML = quotes ? '✅ Données de marché en direct via Twelve Data. Le calendrier économique utilise ' + (calSource==='finnhub'?'Finnhub.':'ForexFactory (source gratuite).') : '⚠️ Connexion configurée mais aucune donnée reçue — vérifie ta clé Twelve Data dans Réglages.';
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.textContent = "ACTUALISATION…";
+  await loadDashboard();
+  btn.disabled = false;
+  btn.textContent = "↻ ACTUALISER";
+});
+
+loadDashboard();
+
+/* ---------------- SETTINGS (relay config — IA) ---------------- */
+const CFG_KEY = "macroedge_relay_cfg_v2";
+function loadCfg(){
+  try{
+    const c = JSON.parse(localStorage.getItem(CFG_KEY)) || {provider:"anthropic", key:"", model:""};
+    c.url = loadRelayUrl(); // URL toujours dérivée de la clé partagée
+    return c;
+  }catch(e){ return {provider:"anthropic", url:loadRelayUrl(), key:"", model:""}; }
+}
+function saveCfg(cfg){
+  try{
+    saveRelayUrl(cfg.url || "");
+    localStorage.setItem(CFG_KEY, JSON.stringify({provider:cfg.provider, key:cfg.key, model:cfg.model}));
+  }catch(e){}
+}
+let relayCfg = loadCfg();
+document.getElementById('cfgProvider').value = relayCfg.provider || "anthropic";
+document.getElementById('cfgRelayUrl').value = relayCfg.url || "";
+document.getElementById('cfgApiKey').value = relayCfg.key || "";
+document.getElementById('cfgModel').value = relayCfg.model || "";
+
+document.getElementById('cfgSaveBtn').addEventListener('click', ()=>{
+  relayCfg = {
+    provider: document.getElementById('cfgProvider').value,
+    url: document.getElementById('cfgRelayUrl').value.trim(),
+    key: document.getElementById('cfgApiKey').value.trim(),
+    model: document.getElementById('cfgModel').value.trim()
+  };
+  saveCfg(relayCfg);
+  dataCfg.url = relayCfg.url; // garde la config data synchronisée immédiatement
+  const msg = document.getElementById('cfgSaveMsg');
+  msg.style.display = 'block';
+  setTimeout(()=>msg.style.display='none', 2000);
+});
+
+document.getElementById('cfgTestBtn').addEventListener('click', async ()=>{
+  const resultEl = document.getElementById('cfgTestResult');
+  resultEl.style.color = 'var(--ink-dim)';
+  resultEl.textContent = "Test en cours…";
+  if(!relayCfg.url || !relayCfg.key){
+    resultEl.style.color = 'var(--down)';
+    resultEl.textContent = "Renseigne l'URL du relais et la clé API, puis enregistre avant de tester.";
+    return;
+  }
+  try{
+    const res = await fetch(relayCfg.url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        action:'chat',
+        provider: relayCfg.provider,
+        apiKey: relayCfg.key,
+        model: relayCfg.model || undefined,
+        messages: [{role:'user', content:'Réponds uniquement "OK".'}]
+      })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      resultEl.style.color = 'var(--down)';
+      resultEl.textContent = "Échec : " + (data.error || res.status);
+      return;
+    }
+    resultEl.style.color = 'var(--up)';
+    resultEl.textContent = "Connexion OK (" + relayCfg.provider + ") — réponse reçue : " + (data.text || "").slice(0,60);
+  }catch(e){
+    resultEl.style.color = 'var(--down)';
+    resultEl.textContent = "Erreur réseau : " + (e?.message || String(e)) + " (vérifie que l'URL du relais est correcte et accessible).";
+  }
+});
+
+document.getElementById('cfgDataTestBtn').addEventListener('click', async ()=>{
+  const resultEl = document.getElementById('cfgDataTestResult');
+  resultEl.style.color = 'var(--ink-dim)';
+  resultEl.textContent = "Test en cours…";
+  if(!dataCfg.url || !dataCfg.twelveKey){
+    resultEl.style.color = 'var(--down)';
+    resultEl.textContent = "Renseigne l'URL du relais (onglet ci-dessus) et la clé Twelve Data, puis enregistre avant de tester.";
+    return;
+  }
+  try{
+    const q = await fetchQuotes();
+    const c = await fetchCalendar();
+    const okQuotes = q && q.length && q.some(x=>x.ok);
+    resultEl.style.color = okQuotes ? 'var(--up)' : 'var(--down)';
+    resultEl.textContent = (okQuotes ? "OK — " : "Problème — ") +
+      (q ? q.filter(x=>x.ok).length + "/" + q.length + " tickers reçus" : "aucun ticker reçu") +
+      " · Calendrier : " + (c ? c.events.length + " événements (" + (c.source||'') + ")" : "échec");
+  }catch(e){
+    resultEl.style.color = 'var(--down)';
+    resultEl.textContent = "Erreur : " + (e?.message || String(e));
+  }
+});
+
+/* ---------------- GENERATOR ---------------- */
+let currentType = 'flash';
+document.getElementById('typeSeg').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.seg-btn');
+  if(!btn) return;
+  document.querySelectorAll('#typeSeg .seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentType = btn.dataset.type;
+  const label = document.getElementById('inputLabel');
+  const input = document.getElementById('genInput');
+  if(currentType==='flash'){
+    label.textContent = "TITRE / DÉCLARATION";
+    input.placeholder = "Ex: Fed's Barkin: further rate hikes may be needed as supply shocks aren't proving short-lived";
+  } else if(currentType==='calendar'){
+    label.textContent = "DONNÉE PUBLIÉE";
+    input.placeholder = "Ex: CPI US Août: 3,2% vs 3,1% attendu, 3,0% précédent";
+  } else {
+    label.textContent = "CONTEXTE / FOCUS (optionnel)";
+    input.placeholder = "Ex: Focus USD et taux avant PCE de vendredi";
+  }
+});
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const SYSTEM_PROMPT = `Tu es "MacroEdge AI", analyste macroéconomique senior et stratège de trading institutionnel. Style Bloomberg/Reuters Desk : professionnel, concis, direct, neutre. Pas de préambule ni de formule de politesse. Va droit au fait.
+
+Ne formule aucune spéculation sans l'appuyer sur des mécanismes de taux, de liquidité ou de politique monétaire. Si une donnée manque pour un biais clair, écris explicitement "Neutre / En attente de confirmation". Ne donne jamais d'ordre d'achat/vente direct ; formule des biais contextuels ("environnement favorable aux positions acheteuses sur X").
+
+Réponds UNIQUEMENT en JSON valide, sans texte autour, sans balises markdown, avec exactement cette forme :
+{"impact":"Élevé|Moyen|Faible","sentiment_label":"texte court ex: Haussier","sentiment_score":"ex: +0.6","assets":"liste courte d'actifs","body":"texte complet de l'analyse au format demandé, avec \\n pour les retours à la ligne"}
+
+Formats attendus dans "body" selon le type :
+- flash: "• Impact : ...\\n• Sentiment : ...\\n• Actifs impactés : ...\\n\\nDécryptage :\\n(1 à 2 phrases sur la nuance sous-jacente)"
+- calendar: "• Événement : ...\\n• Donnée : Actuel vs Prévision vs Précédent\\n\\nLecture Macro :\\n1. Impact immédiat : ...\\n2. Biais de trading : ..."
+- brief: "1. Régime Macro Actuel : ...\\n2. Tonalité Dollar (DXY) & Taux US : ...\\n3. Pression Inter-marchés : ...\\n4. Complexe en Focus : ...\\n5. Biais Synthétique :\\n   - Actif A : Bullish/Bearish/Neutre\\n   - Actif B : Bullish/Bearish/Neutre"
+
+Pour un brief sans contexte fourni par l'utilisateur, base-toi sur tes connaissances générales des dynamiques macro et dis explicitement que les niveaux précis doivent être vérifiés en direct, plutôt que d'inventer des chiffres de marché exacts.`;
+
+function extractJson(text){
+  // tolérant : essaie tout le texte, puis un bloc ```json ... ```, puis la première { ... } trouvée
+  try{ return JSON.parse(text); }catch(e){}
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if(fence){ try{ return JSON.parse(fence[1]); }catch(e){} }
+  const brace = text.match(/\{[\s\S]*\}/);
+  if(brace){ try{ return JSON.parse(brace[0]); }catch(e){} }
+  throw new Error("Réponse non-JSON reçue de Claude.");
+}
+
+async function generateAnalysis(type, input){
+  const typeLabel = type==='flash' ? 'FLASH NEWS' : (type==='calendar' ? 'CALENDRIER ÉCONOMIQUE' : 'PRE-MARKET BRIEF');
+  const userMsg = `Type de demande : ${typeLabel}\n\nEntrée utilisateur :\n${input || "(aucune entrée spécifique — génère un brief général)"}\n\nRéponds au format JSON défini dans tes instructions.`;
+
+  if(!relayCfg.url || !relayCfg.key){
+    return {
+      error: true,
+      body: "Aucun relais configuré. Va dans l'onglet RÉGLAGES, renseigne l'URL de ton relais et ta clé API Anthropic, enregistre, puis reviens ici."
+    };
+  }
+
+  try{
+    const res = await fetch(relayCfg.url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        provider: relayCfg.provider,
+        apiKey: relayCfg.key,
+        model: relayCfg.model || undefined,
+        system: SYSTEM_PROMPT,
+        messages: [{role:'user', content: userMsg}]
+      })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      return { error:true, body: "Erreur du relais/API (" + res.status + ") : " + (data.error || "raison inconnue.") };
+    }
+    const result = extractJson(data.text || "");
+    return {
+      error:false,
+      badges: [
+        {label:`IMPACT: ${result.impact||'—'}`, cls:`badge-impact-${result.impact||''}`},
+        {label:`SENTIMENT: ${result.sentiment_label||'—'} (${result.sentiment_score||''})`, cls:''},
+        {label:`ACTIFS: ${result.assets||'—'}`, cls:''},
+      ],
+      body: result.body || JSON.stringify(result)
+    };
+  }catch(e){
+    return {
+      error:true,
+      body: "Erreur réseau lors de l'appel au relais : " + (e?.message || String(e)) + ". Vérifie l'URL du relais dans Réglages et sa disponibilité."
+    };
+  }
+}
+
+document.getElementById('genBtn').addEventListener('click', async ()=>{
+  const input = document.getElementById('genInput').value.trim();
+  if(!input && currentType !== 'brief'){
+    document.getElementById('genInput').focus();
+    return;
+  }
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  const providerLabel = {anthropic:'CLAUDE', openai:'GPT', gemini:'GEMINI'}[relayCfg.provider] || 'IA';
+  btn.textContent = "ANALYSE EN COURS (" + providerLabel + ")…";
+  document.getElementById('outputEmpty').style.display = 'none';
+  document.getElementById('outputContent').style.display = 'none';
+
+  const result = await generateAnalysis(currentType, input);
+
+  if(result.error){
+    document.getElementById('outputBadges').innerHTML = '<span class="badge" style="color:var(--down);border-color:var(--down);">ERREUR</span>';
+    document.getElementById('outputBody').textContent = result.body;
+    document.getElementById('outputContent').style.display = 'block';
+  } else {
+    document.getElementById('outputBadges').innerHTML = result.badges.map(b=>`<span class="badge ${b.cls}">${b.label}</span>`).join('');
+    document.getElementById('outputBody').textContent = result.body;
+    document.getElementById('outputContent').style.display = 'block';
+    document.getElementById('outputContent').dataset.rawInput = input;
+    document.getElementById('outputContent').dataset.rawType = currentType;
+  }
+  btn.disabled = false;
+  btn.textContent = "GÉNÉRER L'ANALYSE";
+});
+
+document.getElementById('copyOutputBtn').addEventListener('click', ()=>{
+  const text = document.getElementById('outputBody').textContent;
+  navigator.clipboard?.writeText(text).then(()=>{
+    const btn = document.getElementById('copyOutputBtn');
+    const orig = btn.textContent;
+    btn.textContent = "COPIÉ ✓";
+    setTimeout(()=>btn.textContent = orig, 1200);
+  }).catch(()=>{});
+});
+
+document.getElementById('saveToJournalBtn').addEventListener('click', ()=>{
+  const type = document.getElementById('outputContent').dataset.rawType;
+  const input = document.getElementById('outputContent').dataset.rawInput;
+  const body = document.getElementById('outputBody').textContent;
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('fr-FR'),
+    asset: type==='flash' ? "Flash News" : (type==='calendar' ? "Calendrier Éco" : "Pre-Market Brief"),
+    dir: "—",
+    entry: "—",
+    exit: "—",
+    pnl: null,
+    status: "Note",
+    thesis: (input ? input + " — " : "") + body.slice(0,220).replace(/\n/g,' ') + "…"
+  };
+  journal.unshift(entry);
+  saveJournal(journal);
+  renderJournal();
+  const btn = document.getElementById('saveToJournalBtn');
+  const orig = btn.textContent;
+  btn.textContent = "AJOUTÉ ✓";
+  setTimeout(()=>btn.textContent = orig, 1200);
+});
+
+/* ---------------- JOURNAL ---------------- */
+function renderJournal(){
+  const body = document.getElementById('journalBody');
+  const empty = document.getElementById('journalEmpty');
+  if(journal.length === 0){
+    body.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    body.innerHTML = journal.map(e=>{
+      const pnlNum = parseFloat(e.pnl);
+      const pnlHtml = (e.pnl===null || e.pnl==='' || isNaN(pnlNum))
+        ? '<span style="color:var(--ink-faint);">—</span>'
+        : `<span class="${pnlNum>=0?'pnl-pos':'pnl-neg'}">${pnlNum>=0?'+':''}${pnlNum}%</span>`;
+      const dirHtml = e.dir==='Long' ? '<span class="dir-long">LONG</span>' : (e.dir==='Short' ? '<span class="dir-short">SHORT</span>' : '<span style="color:var(--ink-faint);font-family:var(--mono);font-size:11px;">—</span>');
+      const statusHtml = e.status==='Ouvert' ? '<span class="status-open">OUVERT</span>' : (e.status==='Clôturé' ? '<span class="status-closed">CLÔTURÉ</span>' : `<span class="status-closed">${escapeHtml(e.status)}</span>`);
+      return `<tr>
+        <td style="font-family:var(--mono);color:var(--ink-faint);">${e.date}</td>
+        <td style="font-weight:500;">${escapeHtml(e.asset)}</td>
+        <td>${dirHtml}</td>
+        <td style="font-family:var(--mono);">${escapeHtml(String(e.entry))}</td>
+        <td style="font-family:var(--mono);">${escapeHtml(String(e.exit))}</td>
+        <td>${pnlHtml}</td>
+        <td>${statusHtml}</td>
+        <td style="white-space:normal;max-width:320px;color:var(--ink-dim);">${escapeHtml(e.thesis||'')}</td>
+        <td><button class="del-btn" data-id="${e.id}">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+  // stats
+  document.getElementById('statCount').textContent = journal.length;
+  const withPnl = journal.filter(e=>e.pnl!==null && e.pnl!=='' && !isNaN(parseFloat(e.pnl)));
+  if(withPnl.length){
+    const wins = withPnl.filter(e=>parseFloat(e.pnl)>0).length;
+    document.getElementById('statWinrate').textContent = Math.round((wins/withPnl.length)*100) + "%";
+    const cum = withPnl.reduce((s,e)=>s+parseFloat(e.pnl),0);
+    const cumEl = document.getElementById('statPnl');
+    cumEl.textContent = (cum>=0?'+':'') + cum.toFixed(1) + "%";
+    cumEl.style.color = cum>=0 ? 'var(--up)' : 'var(--down)';
+  } else {
+    document.getElementById('statWinrate').textContent = "—";
+    document.getElementById('statPnl').textContent = "—";
+    document.getElementById('statPnl').style.color = 'var(--ink)';
+  }
+}
+renderJournal();
+
+document.getElementById('journalBody').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.del-btn');
+  if(!btn) return;
+  const id = Number(btn.dataset.id);
+  journal = journal.filter(e=>e.id !== id);
+  saveJournal(journal);
+  renderJournal();
+});
+
+/* modal */
+const overlay = document.getElementById('modalOverlay');
+document.getElementById('addTradeBtn').addEventListener('click', ()=>{
+  overlay.classList.add('open');
+});
+document.getElementById('modalCancel').addEventListener('click', ()=>{
+  overlay.classList.remove('open');
+});
+overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.classList.remove('open'); });
+
+document.getElementById('modalSave').addEventListener('click', ()=>{
+  const asset = document.getElementById('mAsset').value.trim();
+  if(!asset){ document.getElementById('mAsset').focus(); return; }
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('fr-FR'),
+    asset,
+    dir: document.getElementById('mDir').value,
+    entry: document.getElementById('mEntry').value.trim() || "—",
+    exit: document.getElementById('mExit').value.trim() || "—",
+    pnl: document.getElementById('mPnl').value.trim(),
+    status: document.getElementById('mStatus').value,
+    thesis: document.getElementById('mThesis').value.trim()
+  };
+  journal.unshift(entry);
+  saveJournal(journal);
+  renderJournal();
+  overlay.classList.remove('open');
+  ['mAsset','mEntry','mExit','mPnl','mThesis'].forEach(id=>document.getElementById(id).value='');
+});
+</script>
+</body>
+</html>
