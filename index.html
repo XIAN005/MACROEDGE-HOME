@@ -307,7 +307,7 @@ table.trades tr:last-child td{border-bottom:none;}
 
     <div class="card" style="padding:12px 20px; margin-bottom:14px; border-color:var(--amber); background:linear-gradient(0deg,var(--panel),var(--panel));">
       <div style="font-family:var(--mono); font-size:11.5px; color:var(--amber); line-height:1.6;" id="topBannerText">
-        ⚠ Configure Twelve Data dans Réglages pour des prix live. Sans clé, les chiffres affichés sont un instantané figé du 23/09/2026.
+        ⚠ Configure Alpha Vantage dans Réglages pour des prix live. Sans clé, les chiffres affichés sont un instantané figé du 23/09/2026.
       </div>
     </div>
 
@@ -393,7 +393,7 @@ table.trades tr:last-child td{border-bottom:none;}
     </div>
 
     <div class="foot-note">
-      Prix de marché : Twelve Data en direct si configuré dans Réglages, sinon instantané figé. Calendrier économique : Finnhub ou repli gratuit ForexFactory. Le score Edge Factor, le biais synthétique par actif et la lecture inter-marchés restent une analyse qualitative rédigée manuellement — ils ne sont pas recalculés automatiquement à partir des prix live. Analyse fournie à titre informatif — ne constitue pas un conseil en investissement.
+      Prix de marché : Alpha Vantage en direct si configuré dans Réglages, sinon instantané figé. Calendrier économique : Finnhub ou repli gratuit ForexFactory. Le score Edge Factor, le biais synthétique par actif et la lecture inter-marchés restent une analyse qualitative rédigée manuellement — ils ne sont pas recalculés automatiquement à partir des prix live. Analyse fournie à titre informatif — ne constitue pas un conseil en investissement.
     </div>
   </div>
 
@@ -416,7 +416,7 @@ table.trades tr:last-child td{border-bottom:none;}
         </div>
         <button class="gen-btn" id="genBtn">GÉNÉRER L'ANALYSE</button>
         <div class="gen-disclaimer" id="genDisclaimer">
-          Cette analyse est générée par un vrai appel à Claude via <b style="color:var(--ink);">ton relais API personnel</b> — configure-le dans l'onglet Réglages. Claude n'a pas accès au web : colle le texte complet du titre/chiffre, pas juste un mot-clé.
+          Cette analyse est générée par un vrai appel à l'IA via <b style="color:var(--ink);">ton relais API personnel</b> — configure-le dans l'onglet Réglages. L'IA n'a pas accès au web : colle le texte complet du titre/chiffre, pas juste un mot-clé.
         </div>
       </div>
 
@@ -470,7 +470,7 @@ table.trades tr:last-child td{border-bottom:none;}
     <div class="card panel-pad" style="max-width:560px;">
       <div class="panel-title">Connexion au générateur IA</div>
       <div class="panel-hint">
-        Le générateur appelle l'IA de ton choix via un petit serveur relais que tu héberges toi-même (gratuit, ~5 min sur Vercel). Ta clé API n'est jamais envoyée ailleurs qu'à CE relais, et rien n'est envoyé au fournisseur choisi tant que l'URL du relais et la clé API ne sont pas renseignées et enregistrées.
+        Le générateur appelle l'IA de ton choix via un petit serveur relais que tu héberges toi-même (gratuit sur Vercel). Ta clé API n'est jamais envoyée ailleurs qu'à CE relais.
       </div>
 
       <div class="form-group">
@@ -488,13 +488,13 @@ table.trades tr:last-child td{border-bottom:none;}
       </div>
 
       <div class="form-group">
-        <label class="form-label">CLÉ API</label>
+        <label class="form-label">CLÉ API IA</label>
         <input type="text" id="cfgApiKey" placeholder="sk-ant-... / sk-... / AIza...">
-        <div class="consent-note">Stockée uniquement dans le stockage local de CE navigateur (localStorage). Jamais transmise à Claude, jamais loggée ailleurs que dans les requêtes vers ton propre relais.</div>
+        <div class="consent-note">Stockée uniquement dans le stockage local de CE navigateur (localStorage).</div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">MODÈLE (optionnel — laisse vide pour le défaut)</label>
+        <label class="form-label">MODÈLE (optionnel)</label>
         <input type="text" id="cfgModel" placeholder="Ex: claude-sonnet-4-5-20250929 / gpt-4o / gemini-2.0-flash">
       </div>
 
@@ -508,21 +508,14 @@ table.trades tr:last-child td{border-bottom:none;}
     </div>
 
     <div class="card panel-pad" style="max-width:560px; margin-top:16px;">
-      <div class="panel-title" style="font-size:13.5px;">Pas encore de relais déployé ?</div>
-      <div class="panel-hint" style="margin-bottom:0;">
-        Le code du relais (une fonction serverless, à déployer gratuitement sur Vercel) et les instructions t'ont été fournis à côté de ce fichier HTML — dossier <code style="font-family:var(--mono);background:var(--panel-2);padding:2px 5px;border-radius:4px;">macroedge-relay/</code>, fichier README.md.
-      </div>
-    </div>
-
-    <div class="card panel-pad" style="max-width:560px; margin-top:16px;">
       <div class="panel-title">Données de marché live</div>
       <div class="panel-hint">
-        Utilise la <b style="color:var(--ink);">même URL de relais</b> que ci-dessus (un seul relais gère l'IA et les données de marché). Prix (or, pétrole, forex...) via <b style="color:var(--ink);">Twelve Data</b> (gratuit, clé requise, 800 requêtes/jour). Calendrier économique via <b style="color:var(--ink);">Finnhub</b> si tu as une clé compatible ; sinon repli automatique et gratuit sur le flux public ForexFactory, sans clé.
+        Utilise la <b style="color:var(--ink);">même URL de relais</b> que ci-dessus. Prix via <b style="color:var(--ink);">Alpha Vantage</b> (gratuit, 25 req/jour). Calendrier économique via <b style="color:var(--ink);">Finnhub</b> ou repli gratuit sur ForexFactory.
       </div>
 
       <div class="form-group">
-        <label class="form-label">CLÉ TWELVE DATA</label>
-        <input type="text" id="cfgTwelveKey" placeholder="Clé Twelve Data (gratuite sur twelvedata.com)">
+        <label class="form-label">CLÉ ALPHA VANTAGE</label>
+        <input type="text" id="cfgAlphaKey" placeholder="Clé Alpha Vantage (gratuite sur alphavantage.co)">
       </div>
 
       <div class="form-group">
@@ -576,7 +569,7 @@ table.trades tr:last-child td{border-bottom:none;}
     </div>
     <div class="form-group">
       <label class="form-label">THÈSE MACRO</label>
-      <textarea id="mThesis" style="min-height:70px;" placeholder="Ex: Long USD sur repricing hawkish Fed + compression prime risque Iran"></textarea>
+      <textarea id="mThesis" style="min-height:70px;" placeholder="Ex: Long USD sur repricing hawkish Fed"></textarea>
     </div>
     <div class="modal-actions">
       <button class="cancel-btn" id="modalCancel">Annuler</button>
@@ -586,7 +579,7 @@ table.trades tr:last-child td{border-bottom:none;}
 </div>
 
 <script>
-/* ---------------- STATE (localStorage, per-viewer) ---------------- */
+/* ---------------- STATE (localStorage) ---------------- */
 const STORAGE_KEY = "macroedge_journal_v1";
 
 function loadJournal(){
@@ -617,8 +610,8 @@ function tick(){
   document.getElementById('clock').textContent = now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 tick(); setInterval(tick, 1000);
-/* ---------------- SETTINGS (market data config) — declared early so dashboard load can use it ---------------- */
-// L'URL du relais est partagée avec la config IA (une seule clé localStorage pour l'URL, "macroedge_relay_url").
+
+/* ---------------- SETTINGS DATA ---------------- */
 const RELAY_URL_KEY = "macroedge_relay_url";
 const DATA_CFG_KEY = "macroedge_data_cfg_v1";
 function loadRelayUrl(){
@@ -628,60 +621,59 @@ function saveRelayUrl(url){
   try{ localStorage.setItem(RELAY_URL_KEY, url); }catch(e){}
 }
 function loadDataCfg(){
-  try{ return JSON.parse(localStorage.getItem(DATA_CFG_KEY)) || {twelveKey:"", finnhubKey:""}; }
-  catch(e){ return {twelveKey:"", finnhubKey:""}; }
+  try{ return JSON.parse(localStorage.getItem(DATA_CFG_KEY)) || {alphaKey:"", finnhubKey:""}; }
+  catch(e){ return {alphaKey:"", finnhubKey:""}; }
 }
 function saveDataCfg(cfg){
   try{ localStorage.setItem(DATA_CFG_KEY, JSON.stringify(cfg)); }catch(e){}
 }
 let dataCfg = loadDataCfg();
-dataCfg.url = loadRelayUrl(); // toujours dérivée de l'URL partagée, jamais stockée en double
-document.getElementById('cfgTwelveKey').value = dataCfg.twelveKey || "";
+dataCfg.url = loadRelayUrl();
+
+document.getElementById('cfgAlphaKey').value = dataCfg.alphaKey || "";
 document.getElementById('cfgFinnhubKey').value = dataCfg.finnhubKey || "";
+
 document.getElementById('cfgDataSaveBtn').addEventListener('click', ()=>{
   dataCfg = {
-    url: loadRelayUrl(), // toujours celle du champ IA — pas de saisie séparée
-    twelveKey: document.getElementById('cfgTwelveKey').value.trim(),
+    url: loadRelayUrl(),
+    alphaKey: document.getElementById('cfgAlphaKey').value.trim(),
     finnhubKey: document.getElementById('cfgFinnhubKey').value.trim()
   };
-  saveDataCfg({twelveKey: dataCfg.twelveKey, finnhubKey: dataCfg.finnhubKey});
+  saveDataCfg({alphaKey: dataCfg.alphaKey, finnhubKey: dataCfg.finnhubKey});
   const msg = document.getElementById('cfgDataSaveMsg');
   msg.style.display = 'block';
   setTimeout(()=>msg.style.display='none', 2000);
   loadDashboard();
 });
 
-/* ---------------- DASHBOARD DATA ---------------- */
-// Snapshot de secours utilisé si aucune clé Twelve Data n'est configurée,
-// ou si l'appel échoue. Capturé par recherche web le 23/09/2026.
-const FALLBACK_SNAPSHOT_LABEL = "23/09/2026 (recherche web ~14h UTC) — snapshot figé";
+/* ---------------- DASHBOARD ---------------- */
+const FALLBACK_SNAPSHOT_LABEL = "23/09/2026 — snapshot figé";
 const FALLBACK_TICKERS = [
   {sym:"USD/JPY", val:"157.5", chg:"+0.10%", dir:"up"},
   {sym:"EUR/USD", val:"1.168", chg:"-0.33%", dir:"down"},
   {sym:"XAU/USD", val:"4 314", chg:"-1.14%", dir:"down"},
-  {sym:"WTI/USD", val:"~90.0", chg:"-0.60%", dir:"down"},
 ];
 const FALLBACK_CALENDAR = [
-  {time:"MER 14:30", country:"US", event:"Ventes de logements neufs (Août)", impact:"low", actual:"—"},
-  {time:"MER 18:00", country:"US", event:"Discours Fed — Musalem (hawkish attendu)", impact:"med", actual:"—"},
+  {time:"MER 14:30", country:"US", event:"Ventes de logements neufs", impact:"low", actual:"—"},
+  {time:"MER 18:00", country:"US", event:"Discours Fed — Musalem", impact:"med", actual:"—"},
   {time:"JEU 14:30", country:"US", event:"Demandes d'allocations chômage", impact:"med", actual:"Prév. 235K"},
-  {time:"VEN 14:30", country:"US", event:"PCE Core (indicateur préféré Fed)", impact:"high", actual:"Prév. 2,9% YoY"},
+  {time:"VEN 14:30", country:"US", event:"PCE Core", impact:"high", actual:"Prév. 2,9% YoY"},
 ];
 const biases = [
   {asset:"DXY", dir:"up", note:"Repricing hawkish Fed + spread de taux favorable."},
-  {asset:"EUR/USD", dir:"down", note:"Faiblesse structurelle vs USD, BCE stable en attentisme."},
-  {asset:"Gold (XAU)", dir:"flat", note:"Tiraillé entre taux réels ↑ et demande officielle/géopolitique."},
-  {asset:"US10Y Yield", dir:"down", note:"Détente tactique post-hausse, désescalade Iran réduit la prime inflation."},
-  {asset:"WTI/Brent", dir:"down", note:"6e séance de baisse — dégel diplomatique Iran, offre Saoudienne qui revient."},
-  {asset:"S&P 500", dir:"flat", note:"Records proches, mais vigilance sur 'higher for longer' et sommet Trump-Xi."},
+  {asset:"EUR/USD", dir:"down", note:"Faiblesse structurelle vs USD, BCE stable."},
+  {asset:"Gold (XAU)", dir:"flat", note:"Tiraillé entre taux réels ↑ et demande géopolitique."},
+  {asset:"US10Y Yield", dir:"down", note:"Détente tactique post-hausse."},
+  {asset:"WTI/Brent", dir:"down", note:"Dégel diplomatique, offre Saoudienne en hausse."},
+  {asset:"S&P 500", dir:"flat", note:"Vigilance sur le régime 'higher for longer'."},
 ];
 
-const QUOTE_SYMBOLS = ["EUR/USD","USD/JPY","XAU/USD","WTI/USD"]; // adaptable — Twelve Data ne fournit pas DXY/US10Y directement sur le plan gratuit
+const QUOTE_SYMBOLS = ["EUR/USD","USD/JPY","XAU/USD"];
 
 async function fetchQuotes(){
-  if(!dataCfg.url || !dataCfg.twelveKey) return null;
+  if(!dataCfg.url || !dataCfg.alphaKey) return null;
   try{
-    const url = dataCfg.url + "?action=quotes&apiKey=" + encodeURIComponent(dataCfg.twelveKey) + "&symbols=" + encodeURIComponent(QUOTE_SYMBOLS.join(','));
+    const url = dataCfg.url + "?action=quotes&apiKey=" + encodeURIComponent(dataCfg.alphaKey) + "&symbols=" + encodeURIComponent(QUOTE_SYMBOLS.join(','));
     const r = await fetch(url);
     const data = await r.json();
     if(!r.ok || !data.quotes) return null;
@@ -690,7 +682,7 @@ async function fetchQuotes(){
 }
 
 async function fetchCalendar(){
-  if(!dataCfg.url) return null; // le calendrier peut fonctionner même sans clé Finnhub (fallback ForexFactory), mais il faut au moins l'URL du relais
+  if(!dataCfg.url) return null;
   try{
     const url = dataCfg.url + "?action=calendar" + (dataCfg.finnhubKey ? "&apiKey=" + encodeURIComponent(dataCfg.finnhubKey) : "");
     const r = await fetch(url);
@@ -704,7 +696,7 @@ function renderTickersFromLive(quotes){
   const row = document.getElementById('tickerRow');
   row.innerHTML = quotes.map(q=>{
     if(!q.ok){
-      return `<div class="ticker"><div class="ticker-sym">${q.symbol}</div><div class="ticker-val" style="color:var(--ink-faint); font-size:13px;">indispo.</div></div>`;
+      return `<div class="ticker"><div class="ticker-sym">${q.symbol}</div><div class="ticker-val" style="color:var(--ink-faint); font-size:12px;">${q.error||'indispo.'}</div></div>`;
     }
     const dir = q.change > 0 ? 'up' : (q.change < 0 ? 'down' : 'flat');
     const cls = dir==='up'?'chg-up':(dir==='down'?'chg-down':'chg-flat');
@@ -713,7 +705,7 @@ function renderTickersFromLive(quotes){
       <div class="ticker-sym">${q.symbol}</div>
       <div class="ticker-val">${q.price.toLocaleString('fr-FR',{maximumFractionDigits:4})}</div>
       <div class="ticker-chg ${cls}">${arrow} ${q.percent_change>=0?'+':''}${q.percent_change.toFixed(2)}%</div>
-      <div style="font-family:var(--mono); font-size:9px; color:var(--ink-faint); margin-top:5px;">Twelve Data · live</div>
+      <div style="font-family:var(--mono); font-size:9px; color:var(--ink-faint); margin-top:5px;">Alpha Vantage · live</div>
     </div>`;
   }).join('');
 }
@@ -734,9 +726,7 @@ function renderTickersFallback(){
 
 function renderCalendarFromLive(events){
   const list = document.getElementById('calList');
-  const upcoming = events
-    .filter(e=>e.event)
-    .slice(0, 10);
+  const upcoming = events.filter(e=>e.event).slice(0, 10);
   if(upcoming.length === 0){ renderCalendarFallback(); return; }
   list.innerHTML = upcoming.map(e=>{
     const impact = (e.impact||'low').toLowerCase();
@@ -781,7 +771,6 @@ function renderBias(){
 }
 renderBias();
 
-/* Edge factor gauge animation (score qualitatif, non recalculé automatiquement pour l'instant) */
 (function(){
   const score = 62;
   const circumference = 2 * Math.PI * 54;
@@ -796,12 +785,12 @@ renderBias();
 async function loadDashboard(){
   const banner = document.getElementById('dashSourceBanner');
   const topBanner = document.getElementById('topBannerText');
-  if(!dataCfg.url || !dataCfg.twelveKey){
+  if(!dataCfg.url || !dataCfg.alphaKey){
     renderTickersFallback();
     renderCalendarFallback();
     document.getElementById('updatedAt').textContent = "Snapshot du : " + FALLBACK_SNAPSHOT_LABEL;
-    if(banner) banner.textContent = "📌 Données figées — configure Twelve Data dans Réglages pour du live.";
-    if(topBanner) topBanner.innerHTML = '⚠ Configure Twelve Data dans Réglages pour des prix live. Sans clé, les chiffres affichés sont un instantané figé du <b>23/09/2026</b>.';
+    if(banner) banner.textContent = "📌 Données figées — configure Alpha Vantage dans Réglages.";
+    if(topBanner) topBanner.innerHTML = '⚠ Configure Alpha Vantage dans Réglages pour des prix live. Sans clé, les chiffres sont un instantané figé.';
     return;
   }
   if(banner) banner.textContent = "⏳ Récupération des données live…";
@@ -823,11 +812,11 @@ async function loadDashboard(){
   document.getElementById('updatedAt').textContent = "Dernière actualisation live : " + now;
   if(banner){
     const src = calSource ? (calSource==='finnhub' ? 'Finnhub' : 'ForexFactory (gratuit)') : '—';
-    banner.textContent = (quotes ? "✅ Prix : Twelve Data live" : "⚠️ Prix indisponibles, snapshot figé utilisé") + " · Calendrier : " + src;
+    banner.textContent = (quotes ? "✅ Prix : Alpha Vantage live" : "⚠️ Prix indisponibles") + " · Calendrier : " + src;
   }
   if(topBanner){
     topBanner.style.color = 'var(--up)';
-    topBanner.innerHTML = quotes ? '✅ Données de marché en direct via Twelve Data. Le calendrier économique utilise ' + (calSource==='finnhub'?'Finnhub.':'ForexFactory (source gratuite).') : '⚠️ Connexion configurée mais aucune donnée reçue — vérifie ta clé Twelve Data dans Réglages.';
+    topBanner.innerHTML = quotes ? '✅ Données de marché en direct via Alpha Vantage.' : '⚠️ Vérifie ta clé Alpha Vantage dans Réglages.';
   }
 }
 
@@ -842,12 +831,12 @@ document.getElementById('refreshBtn').addEventListener('click', async ()=>{
 
 loadDashboard();
 
-/* ---------------- SETTINGS (relay config — IA) ---------------- */
+/* ---------------- SETTINGS IA ---------------- */
 const CFG_KEY = "macroedge_relay_cfg_v2";
 function loadCfg(){
   try{
     const c = JSON.parse(localStorage.getItem(CFG_KEY)) || {provider:"anthropic", key:"", model:""};
-    c.url = loadRelayUrl(); // URL toujours dérivée de la clé partagée
+    c.url = loadRelayUrl();
     return c;
   }catch(e){ return {provider:"anthropic", url:loadRelayUrl(), key:"", model:""}; }
 }
@@ -871,7 +860,7 @@ document.getElementById('cfgSaveBtn').addEventListener('click', ()=>{
     model: document.getElementById('cfgModel').value.trim()
   };
   saveCfg(relayCfg);
-  dataCfg.url = relayCfg.url; // garde la config data synchronisée immédiatement
+  dataCfg.url = relayCfg.url;
   const msg = document.getElementById('cfgSaveMsg');
   msg.style.display = 'block';
   setTimeout(()=>msg.style.display='none', 2000);
@@ -883,7 +872,7 @@ document.getElementById('cfgTestBtn').addEventListener('click', async ()=>{
   resultEl.textContent = "Test en cours…";
   if(!relayCfg.url || !relayCfg.key){
     resultEl.style.color = 'var(--down)';
-    resultEl.textContent = "Renseigne l'URL du relais et la clé API, puis enregistre avant de tester.";
+    resultEl.textContent = "Renseigne l'URL du relais et la clé API.";
     return;
   }
   try{
@@ -905,10 +894,10 @@ document.getElementById('cfgTestBtn').addEventListener('click', async ()=>{
       return;
     }
     resultEl.style.color = 'var(--up)';
-    resultEl.textContent = "Connexion OK (" + relayCfg.provider + ") — réponse reçue : " + (data.text || "").slice(0,60);
+    resultEl.textContent = "Connexion OK (" + relayCfg.provider + ")";
   }catch(e){
     resultEl.style.color = 'var(--down)';
-    resultEl.textContent = "Erreur réseau : " + (e?.message || String(e)) + " (vérifie que l'URL du relais est correcte et accessible).";
+    resultEl.textContent = "Erreur réseau : " + (e?.message || String(e));
   }
 });
 
@@ -916,9 +905,9 @@ document.getElementById('cfgDataTestBtn').addEventListener('click', async ()=>{
   const resultEl = document.getElementById('cfgDataTestResult');
   resultEl.style.color = 'var(--ink-dim)';
   resultEl.textContent = "Test en cours…";
-  if(!dataCfg.url || !dataCfg.twelveKey){
+  if(!dataCfg.url || !dataCfg.alphaKey){
     resultEl.style.color = 'var(--down)';
-    resultEl.textContent = "Renseigne l'URL du relais (onglet ci-dessus) et la clé Twelve Data, puis enregistre avant de tester.";
+    resultEl.textContent = "Renseigne l'URL du relais et la clé Alpha Vantage.";
     return;
   }
   try{
@@ -927,15 +916,14 @@ document.getElementById('cfgDataTestBtn').addEventListener('click', async ()=>{
     const okQuotes = q && q.length && q.some(x=>x.ok);
     resultEl.style.color = okQuotes ? 'var(--up)' : 'var(--down)';
     resultEl.textContent = (okQuotes ? "OK — " : "Problème — ") +
-      (q ? q.filter(x=>x.ok).length + "/" + q.length + " tickers reçus" : "aucun ticker reçu") +
-      " · Calendrier : " + (c ? c.events.length + " événements (" + (c.source||'') + ")" : "échec");
+      (q ? q.filter(x=>x.ok).length + "/" + q.length + " tickers reçus" : "aucun ticker");
   }catch(e){
     resultEl.style.color = 'var(--down)';
     resultEl.textContent = "Erreur : " + (e?.message || String(e));
   }
 });
 
-/* ---------------- GENERATOR ---------------- */
+/* ---------------- GENERATOR & JOURNAL ---------------- */
 let currentType = 'flash';
 document.getElementById('typeSeg').addEventListener('click', (e)=>{
   const btn = e.target.closest('.seg-btn');
@@ -943,58 +931,27 @@ document.getElementById('typeSeg').addEventListener('click', (e)=>{
   document.querySelectorAll('#typeSeg .seg-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   currentType = btn.dataset.type;
-  const label = document.getElementById('inputLabel');
-  const input = document.getElementById('genInput');
-  if(currentType==='flash'){
-    label.textContent = "TITRE / DÉCLARATION";
-    input.placeholder = "Ex: Fed's Barkin: further rate hikes may be needed as supply shocks aren't proving short-lived";
-  } else if(currentType==='calendar'){
-    label.textContent = "DONNÉE PUBLIÉE";
-    input.placeholder = "Ex: CPI US Août: 3,2% vs 3,1% attendu, 3,0% précédent";
-  } else {
-    label.textContent = "CONTEXTE / FOCUS (optionnel)";
-    input.placeholder = "Ex: Focus USD et taux avant PCE de vendredi";
-  }
 });
 
-function escapeHtml(s){
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-const SYSTEM_PROMPT = `Tu es "MacroEdge AI", analyste macroéconomique senior et stratège de trading institutionnel. Style Bloomberg/Reuters Desk : professionnel, concis, direct, neutre. Pas de préambule ni de formule de politesse. Va droit au fait.
-
-Ne formule aucune spéculation sans l'appuyer sur des mécanismes de taux, de liquidité ou de politique monétaire. Si une donnée manque pour un biais clair, écris explicitement "Neutre / En attente de confirmation". Ne donne jamais d'ordre d'achat/vente direct ; formule des biais contextuels ("environnement favorable aux positions acheteuses sur X").
-
-Réponds UNIQUEMENT en JSON valide, sans texte autour, sans balises markdown, avec exactement cette forme :
-{"impact":"Élevé|Moyen|Faible","sentiment_label":"texte court ex: Haussier","sentiment_score":"ex: +0.6","assets":"liste courte d'actifs","body":"texte complet de l'analyse au format demandé, avec \\n pour les retours à la ligne"}
-
-Formats attendus dans "body" selon le type :
-- flash: "• Impact : ...\\n• Sentiment : ...\\n• Actifs impactés : ...\\n\\nDécryptage :\\n(1 à 2 phrases sur la nuance sous-jacente)"
-- calendar: "• Événement : ...\\n• Donnée : Actuel vs Prévision vs Précédent\\n\\nLecture Macro :\\n1. Impact immédiat : ...\\n2. Biais de trading : ..."
-- brief: "1. Régime Macro Actuel : ...\\n2. Tonalité Dollar (DXY) & Taux US : ...\\n3. Pression Inter-marchés : ...\\n4. Complexe en Focus : ...\\n5. Biais Synthétique :\\n   - Actif A : Bullish/Bearish/Neutre\\n   - Actif B : Bullish/Bearish/Neutre"
-
-Pour un brief sans contexte fourni par l'utilisateur, base-toi sur tes connaissances générales des dynamiques macro et dis explicitement que les niveaux précis doivent être vérifiés en direct, plutôt que d'inventer des chiffres de marché exacts.`;
+const SYSTEM_PROMPT = `Tu es "MacroEdge AI", analyste macroéconomique.
+Réponds UNIQUEMENT en JSON valide :
+{"impact":"Élevé|Moyen|Faible","sentiment_label":"Haussier|Baissier","sentiment_score":"+0.5","assets":"devise/actif","body":"Analyse au format texte..."}`;
 
 function extractJson(text){
-  // tolérant : essaie tout le texte, puis un bloc ```json ... ```, puis la première { ... } trouvée
   try{ return JSON.parse(text); }catch(e){}
-  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if(fence){ try{ return JSON.parse(fence[1]); }catch(e){} }
   const brace = text.match(/\{[\s\S]*\}/);
   if(brace){ try{ return JSON.parse(brace[0]); }catch(e){} }
-  throw new Error("Réponse non-JSON reçue de Claude.");
+  throw new Error("Réponse non-JSON reçue.");
 }
 
-async function generateAnalysis(type, input){
-  const typeLabel = type==='flash' ? 'FLASH NEWS' : (type==='calendar' ? 'CALENDRIER ÉCONOMIQUE' : 'PRE-MARKET BRIEF');
-  const userMsg = `Type de demande : ${typeLabel}\n\nEntrée utilisateur :\n${input || "(aucune entrée spécifique — génère un brief général)"}\n\nRéponds au format JSON défini dans tes instructions.`;
-
-  if(!relayCfg.url || !relayCfg.key){
-    return {
-      error: true,
-      body: "Aucun relais configuré. Va dans l'onglet RÉGLAGES, renseigne l'URL de ton relais et ta clé API Anthropic, enregistre, puis reviens ici."
-    };
-  }
+document.getElementById('genBtn').addEventListener('click', async ()=>{
+  const input = document.getElementById('genInput').value.trim();
+  if(!input && currentType !== 'brief') return;
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.textContent = "ANALYSE EN COURS…";
 
   try{
     const res = await fetch(relayCfg.url, {
@@ -1005,96 +962,22 @@ async function generateAnalysis(type, input){
         apiKey: relayCfg.key,
         model: relayCfg.model || undefined,
         system: SYSTEM_PROMPT,
-        messages: [{role:'user', content: userMsg}]
+        messages: [{role:'user', content: `Type: ${currentType}\nInput: ${input}`}]
       })
     });
     const data = await res.json();
-    if(!res.ok){
-      return { error:true, body: "Erreur du relais/API (" + res.status + ") : " + (data.error || "raison inconnue.") };
-    }
     const result = extractJson(data.text || "");
-    return {
-      error:false,
-      badges: [
-        {label:`IMPACT: ${result.impact||'—'}`, cls:`badge-impact-${result.impact||''}`},
-        {label:`SENTIMENT: ${result.sentiment_label||'—'} (${result.sentiment_score||''})`, cls:''},
-        {label:`ACTIFS: ${result.assets||'—'}`, cls:''},
-      ],
-      body: result.body || JSON.stringify(result)
-    };
+    document.getElementById('outputBadges').innerHTML = `<span class="badge">${result.impact||'—'}</span>`;
+    document.getElementById('outputBody').textContent = result.body || "";
+    document.getElementById('outputContent').style.display = 'block';
+    document.getElementById('outputEmpty').style.display = 'none';
   }catch(e){
-    return {
-      error:true,
-      body: "Erreur réseau lors de l'appel au relais : " + (e?.message || String(e)) + ". Vérifie l'URL du relais dans Réglages et sa disponibilité."
-    };
-  }
-}
-
-document.getElementById('genBtn').addEventListener('click', async ()=>{
-  const input = document.getElementById('genInput').value.trim();
-  if(!input && currentType !== 'brief'){
-    document.getElementById('genInput').focus();
-    return;
-  }
-  const btn = document.getElementById('genBtn');
-  btn.disabled = true;
-  const providerLabel = {anthropic:'CLAUDE', openai:'GPT', gemini:'GEMINI'}[relayCfg.provider] || 'IA';
-  btn.textContent = "ANALYSE EN COURS (" + providerLabel + ")…";
-  document.getElementById('outputEmpty').style.display = 'none';
-  document.getElementById('outputContent').style.display = 'none';
-
-  const result = await generateAnalysis(currentType, input);
-
-  if(result.error){
-    document.getElementById('outputBadges').innerHTML = '<span class="badge" style="color:var(--down);border-color:var(--down);">ERREUR</span>';
-    document.getElementById('outputBody').textContent = result.body;
-    document.getElementById('outputContent').style.display = 'block';
-  } else {
-    document.getElementById('outputBadges').innerHTML = result.badges.map(b=>`<span class="badge ${b.cls}">${b.label}</span>`).join('');
-    document.getElementById('outputBody').textContent = result.body;
-    document.getElementById('outputContent').style.display = 'block';
-    document.getElementById('outputContent').dataset.rawInput = input;
-    document.getElementById('outputContent').dataset.rawType = currentType;
+    alert("Erreur de génération : " + e.message);
   }
   btn.disabled = false;
   btn.textContent = "GÉNÉRER L'ANALYSE";
 });
 
-document.getElementById('copyOutputBtn').addEventListener('click', ()=>{
-  const text = document.getElementById('outputBody').textContent;
-  navigator.clipboard?.writeText(text).then(()=>{
-    const btn = document.getElementById('copyOutputBtn');
-    const orig = btn.textContent;
-    btn.textContent = "COPIÉ ✓";
-    setTimeout(()=>btn.textContent = orig, 1200);
-  }).catch(()=>{});
-});
-
-document.getElementById('saveToJournalBtn').addEventListener('click', ()=>{
-  const type = document.getElementById('outputContent').dataset.rawType;
-  const input = document.getElementById('outputContent').dataset.rawInput;
-  const body = document.getElementById('outputBody').textContent;
-  const entry = {
-    id: Date.now(),
-    date: new Date().toLocaleDateString('fr-FR'),
-    asset: type==='flash' ? "Flash News" : (type==='calendar' ? "Calendrier Éco" : "Pre-Market Brief"),
-    dir: "—",
-    entry: "—",
-    exit: "—",
-    pnl: null,
-    status: "Note",
-    thesis: (input ? input + " — " : "") + body.slice(0,220).replace(/\n/g,' ') + "…"
-  };
-  journal.unshift(entry);
-  saveJournal(journal);
-  renderJournal();
-  const btn = document.getElementById('saveToJournalBtn');
-  const orig = btn.textContent;
-  btn.textContent = "AJOUTÉ ✓";
-  setTimeout(()=>btn.textContent = orig, 1200);
-});
-
-/* ---------------- JOURNAL ---------------- */
 function renderJournal(){
   const body = document.getElementById('journalBody');
   const empty = document.getElementById('journalEmpty');
@@ -1103,82 +986,42 @@ function renderJournal(){
     empty.style.display = 'block';
   } else {
     empty.style.display = 'none';
-    body.innerHTML = journal.map(e=>{
-      const pnlNum = parseFloat(e.pnl);
-      const pnlHtml = (e.pnl===null || e.pnl==='' || isNaN(pnlNum))
-        ? '<span style="color:var(--ink-faint);">—</span>'
-        : `<span class="${pnlNum>=0?'pnl-pos':'pnl-neg'}">${pnlNum>=0?'+':''}${pnlNum}%</span>`;
-      const dirHtml = e.dir==='Long' ? '<span class="dir-long">LONG</span>' : (e.dir==='Short' ? '<span class="dir-short">SHORT</span>' : '<span style="color:var(--ink-faint);font-family:var(--mono);font-size:11px;">—</span>');
-      const statusHtml = e.status==='Ouvert' ? '<span class="status-open">OUVERT</span>' : (e.status==='Clôturé' ? '<span class="status-closed">CLÔTURÉ</span>' : `<span class="status-closed">${escapeHtml(e.status)}</span>`);
-      return `<tr>
-        <td style="font-family:var(--mono);color:var(--ink-faint);">${e.date}</td>
-        <td style="font-weight:500;">${escapeHtml(e.asset)}</td>
-        <td>${dirHtml}</td>
-        <td style="font-family:var(--mono);">${escapeHtml(String(e.entry))}</td>
-        <td style="font-family:var(--mono);">${escapeHtml(String(e.exit))}</td>
-        <td>${pnlHtml}</td>
-        <td>${statusHtml}</td>
-        <td style="white-space:normal;max-width:320px;color:var(--ink-dim);">${escapeHtml(e.thesis||'')}</td>
+    body.innerHTML = journal.map(e=>`
+      <tr>
+        <td>${e.date}</td>
+        <td>${escapeHtml(e.asset)}</td>
+        <td>${e.dir}</td>
+        <td>${escapeHtml(e.entry)}</td>
+        <td>${escapeHtml(e.exit)}</td>
+        <td>${e.pnl || '—'}%</td>
+        <td>${e.status}</td>
+        <td>${escapeHtml(e.thesis)}</td>
         <td><button class="del-btn" data-id="${e.id}">✕</button></td>
-      </tr>`;
-    }).join('');
-  }
-  // stats
-  document.getElementById('statCount').textContent = journal.length;
-  const withPnl = journal.filter(e=>e.pnl!==null && e.pnl!=='' && !isNaN(parseFloat(e.pnl)));
-  if(withPnl.length){
-    const wins = withPnl.filter(e=>parseFloat(e.pnl)>0).length;
-    document.getElementById('statWinrate').textContent = Math.round((wins/withPnl.length)*100) + "%";
-    const cum = withPnl.reduce((s,e)=>s+parseFloat(e.pnl),0);
-    const cumEl = document.getElementById('statPnl');
-    cumEl.textContent = (cum>=0?'+':'') + cum.toFixed(1) + "%";
-    cumEl.style.color = cum>=0 ? 'var(--up)' : 'var(--down)';
-  } else {
-    document.getElementById('statWinrate').textContent = "—";
-    document.getElementById('statPnl').textContent = "—";
-    document.getElementById('statPnl').style.color = 'var(--ink)';
+      </tr>
+    `).join('');
   }
 }
 renderJournal();
 
-document.getElementById('journalBody').addEventListener('click', (e)=>{
-  const btn = e.target.closest('.del-btn');
-  if(!btn) return;
-  const id = Number(btn.dataset.id);
-  journal = journal.filter(e=>e.id !== id);
-  saveJournal(journal);
-  renderJournal();
-});
-
-/* modal */
-const overlay = document.getElementById('modalOverlay');
-document.getElementById('addTradeBtn').addEventListener('click', ()=>{
-  overlay.classList.add('open');
-});
-document.getElementById('modalCancel').addEventListener('click', ()=>{
-  overlay.classList.remove('open');
-});
-overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.classList.remove('open'); });
-
+document.getElementById('addTradeBtn').addEventListener('click', ()=> document.getElementById('modalOverlay').classList.add('open'));
+document.getElementById('modalCancel').addEventListener('click', ()=> document.getElementById('modalOverlay').classList.remove('open'));
 document.getElementById('modalSave').addEventListener('click', ()=>{
   const asset = document.getElementById('mAsset').value.trim();
-  if(!asset){ document.getElementById('mAsset').focus(); return; }
-  const entry = {
+  if(!asset) return;
+  journal.unshift({
     id: Date.now(),
     date: new Date().toLocaleDateString('fr-FR'),
     asset,
     dir: document.getElementById('mDir').value,
-    entry: document.getElementById('mEntry').value.trim() || "—",
-    exit: document.getElementById('mExit').value.trim() || "—",
-    pnl: document.getElementById('mPnl').value.trim(),
+    entry: document.getElementById('mEntry').value || "—",
+    exit: document.getElementById('mExit').value || "—",
+    pnl: document.getElementById('mPnl').value,
     status: document.getElementById('mStatus').value,
-    thesis: document.getElementById('mThesis').value.trim()
-  };
-  journal.unshift(entry);
+    thesis: document.getElementById('mThesis').value
+  });
   saveJournal(journal);
   renderJournal();
-  overlay.classList.remove('open');
-  ['mAsset','mEntry','mExit','mPnl','mThesis'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('modalOverlay').classList.remove('open');
 });
 </script>
 </body>
