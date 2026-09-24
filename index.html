@@ -470,7 +470,7 @@ table.trades tr:last-child td{border-bottom:none;}
 
       <div class="form-group">
         <label class="form-label">MODÈLE (optionnel)</label>
-        <input type="text" id="cfgModel" placeholder="Ex: claude-sonnet-4-5-20250929 / gpt-4o">
+        <input type="text" id="cfgModel" placeholder="Ex: claude-3-5-sonnet-20241022 / gpt-4o">
       </div>
 
       <button class="gen-btn" id="cfgSaveBtn">Enregistrer</button>
@@ -587,6 +587,8 @@ tick(); setInterval(tick, 1000);
 /* ---------------- SETTINGS DATA ---------------- */
 const RELAY_URL_KEY = "macroedge_relay_url";
 const DATA_CFG_KEY = "macroedge_data_cfg_v1";
+const AI_CFG_KEY = "macroedge_ai_cfg_v1";
+
 function loadRelayUrl(){
   try{ return localStorage.getItem(RELAY_URL_KEY) || ""; }catch(e){ return ""; }
 }
@@ -600,15 +602,46 @@ function loadDataCfg(){
 function saveDataCfg(cfg){
   try{ localStorage.setItem(DATA_CFG_KEY, JSON.stringify(cfg)); }catch(e){}
 }
+function loadAiCfg(){
+  try{ return JSON.parse(localStorage.getItem(AI_CFG_KEY)) || {provider:"anthropic", apiKey:"", model:""}; }
+  catch(e){ return {provider:"anthropic", apiKey:"", model:""}; }
+}
+function saveAiCfg(cfg){
+  try{ localStorage.setItem(AI_CFG_KEY, JSON.stringify(cfg)); }catch(e){}
+}
+
 let dataCfg = loadDataCfg();
 dataCfg.url = loadRelayUrl();
+let aiCfg = loadAiCfg();
 
+// Populate settings forms
+document.getElementById('cfgRelayUrl').value = dataCfg.url || "";
 document.getElementById('cfgAlphaKey').value = dataCfg.alphaKey || "";
 document.getElementById('cfgFinnhubKey').value = dataCfg.finnhubKey || "";
+document.getElementById('cfgProvider').value = aiCfg.provider || "anthropic";
+document.getElementById('cfgApiKey').value = aiCfg.apiKey || "";
+document.getElementById('cfgModel').value = aiCfg.model || "";
+
+document.getElementById('cfgSaveBtn').addEventListener('click', ()=>{
+  const url = document.getElementById('cfgRelayUrl').value.trim();
+  saveRelayUrl(url);
+  dataCfg.url = url;
+  aiCfg = {
+    provider: document.getElementById('cfgProvider').value,
+    apiKey: document.getElementById('cfgApiKey').value.trim(),
+    model: document.getElementById('cfgModel').value.trim()
+  };
+  saveAiCfg(aiCfg);
+  const msg = document.getElementById('cfgSaveMsg');
+  msg.style.display = 'block';
+  setTimeout(()=>msg.style.display='none', 2000);
+});
 
 document.getElementById('cfgDataSaveBtn').addEventListener('click', ()=>{
+  const url = document.getElementById('cfgRelayUrl').value.trim();
+  saveRelayUrl(url);
   dataCfg = {
-    url: loadRelayUrl(),
+    url: url,
     alphaKey: document.getElementById('cfgAlphaKey').value.trim(),
     finnhubKey: document.getElementById('cfgFinnhubKey').value.trim()
   };
@@ -643,7 +676,7 @@ const biases = [
 
 const QUOTE_SYMBOLS = ["EUR/USD","USD/JPY","XAU/USD"];
 
-/* FIX ALPHA VANTAGE ET GESTION DES ERREURS */
+/* FETCH QUOTES */
 async function fetchQuotes(){
   if(!dataCfg.url || !dataCfg.alphaKey) return { quotes: null, error: "Clé API ou URL manquante" };
   try{
@@ -653,7 +686,6 @@ async function fetchQuotes(){
 
     const data = await r.json();
 
-    // Détection du taux de requêtes max dépassé sur Alpha Vantage (25/jour ou 5/min)
     if (data.Note || data.Information) {
       return { quotes: null, error: "Limite d'appels Alpha Vantage atteinte (25/jour max)" };
     }
@@ -664,363 +696,317 @@ async function fetchQuotes(){
 
     return { quotes: data.quotes, error: null };
   }catch(e){ 
-    return { quotes: null, error: "Erreur de connexion réseau" }; 
+    return { quotes: null, error: "Erreur de connexion au serveur" };
   }
 }
 
+/* FETCH CALENDAR */
 async function fetchCalendar(){
   if(!dataCfg.url) return null;
   try{
-    const url = dataCfg.url + "?action=calendar" + (dataCfg.finnhubKey ? "&apiKey=" + encodeURIComponent(dataCfg.finnhubKey) : "");
+    let url = dataCfg.url + "?action=calendar";
+    if(dataCfg.finnhubKey) url += "&apiKey=" + encodeURIComponent(dataCfg.finnhubKey);
     const r = await fetch(url);
+    if(!r.ok) return null;
     const data = await r.json();
-    if(!r.ok || !Array.isArray(data.events)) return null;
-    return { events: data.events, source: data.source || 'inconnue' };
+    return data.events || null;
   }catch(e){ return null; }
 }
 
-function renderTickersFromLive(quotes){
-  const row = document.getElementById('tickerRow');
-  row.innerHTML = quotes.map(q=>{
-    if(!q.ok){
-      return `<div class="ticker"><div class="ticker-sym">${q.symbol}</div><div class="ticker-val" style="color:var(--ink-faint); font-size:12px;">${q.error||'indispo.'}</div></div>`;
-    }
-    const dir = q.change > 0 ? 'up' : (q.change < 0 ? 'down' : 'flat');
-    const cls = dir==='up'?'chg-up':(dir==='down'?'chg-down':'chg-flat');
-    const arrow = dir==='up'?'▲':(dir==='down'?'▼':'—');
-    return `<div class="ticker">
-      <div class="ticker-sym">${q.symbol}</div>
-      <div class="ticker-val">${q.price ? q.price.toLocaleString('fr-FR',{maximumFractionDigits:4}) : '—'}</div>
-      <div class="ticker-chg ${cls}">${arrow} ${q.percent_change>=0?'+':''}${q.percent_change ? q.percent_change.toFixed(2) : 0}%</div>
-      <div style="font-family:var(--mono); font-size:9px; color:var(--ink-faint); margin-top:5px;">Alpha Vantage · live</div>
-    </div>`;
+function renderTickers(items){
+  const container = document.getElementById('tickerRow');
+  container.innerHTML = items.map(t => {
+    const chgClass = t.dir === 'up' ? 'chg-up' : (t.dir === 'down' ? 'chg-down' : 'chg-flat');
+    return `
+      <div class="ticker">
+        <div class="ticker-sym">${t.sym}</div>
+        <div class="ticker-val">${t.val}</div>
+        <div class="ticker-chg ${chgClass}">${t.chg}</div>
+      </div>
+    `;
   }).join('');
 }
 
-function renderTickersFallback(){
-  const row = document.getElementById('tickerRow');
-  row.innerHTML = FALLBACK_TICKERS.map(t=>{
-    const cls = t.dir==='up'?'chg-up':(t.dir==='down'?'chg-down':'chg-flat');
-    const arrow = t.dir==='up'?'▲':(t.dir==='down'?'▼':'—');
-    return `<div class="ticker">
-      <div class="ticker-sym">${t.sym}</div>
-      <div class="ticker-val">${t.val}</div>
-      <div class="ticker-chg ${cls}">${arrow} ${t.chg}</div>
-      <div style="font-family:var(--mono); font-size:9px; color:var(--ink-faint); margin-top:5px;">Snapshot figé</div>
-    </div>`;
+function renderBiases(){
+  const container = document.getElementById('biasGrid');
+  container.innerHTML = biases.map(b => {
+    const arrow = b.dir === 'up' ? '<span class="arrow-up">▲ LONG</span>' : (b.dir === 'down' ? '<span class="arrow-down">▼ SHORT</span>' : '<span class="arrow-flat">➔ NEUTRE</span>');
+    return `
+      <div class="bias-cell">
+        <div class="bias-asset">${b.asset}</div>
+        <div class="bias-dir">${arrow}</div>
+        <div class="bias-note">${b.note}</div>
+      </div>
+    `;
   }).join('');
 }
 
-function renderCalendarFromLive(events){
-  const list = document.getElementById('calList');
-  const upcoming = events.filter(e=>e.event).slice(0, 10);
-  if(upcoming.length === 0){ renderCalendarFallback(); return; }
-  list.innerHTML = upcoming.map(e=>{
-    const impact = (e.impact||'low').toLowerCase();
-    const dotClass = impact==='high'?'impact-high':(impact==='medium'||impact==='med'?'impact-med':'impact-low');
-    let timeLabel = '—';
-    try{
-      const d = new Date(e.datetime);
-      if(!isNaN(d)) timeLabel = d.toLocaleString('fr-FR',{weekday:'short',hour:'2-digit',minute:'2-digit'}).toUpperCase();
-    }catch(err){}
-    const actualStr = e.actual != null ? `Act: ${e.actual}` : (e.forecast != null ? `Prév: ${e.forecast}` : '—');
-    return `<div class="cal-item">
-      <div class="cal-time">${timeLabel}</div>
-      <div class="cal-event"><span class="impact-dot ${dotClass}"></span><span class="cal-country">${e.country}</span>${e.event}</div>
-      <div class="cal-actual">${actualStr}</div>
-    </div>`;
+function renderCalendar(events){
+  const container = document.getElementById('calList');
+  const items = events || FALLBACK_CALENDAR;
+  container.innerHTML = items.map(e => {
+    const timeStr = e.datetime ? new Date(e.datetime).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : (e.time || '--:--');
+    const impactClass = e.impact === 'high' ? 'impact-high' : (e.impact === 'med' || e.impact === 'medium' ? 'impact-med' : 'impact-low');
+    return `
+      <div class="cal-item">
+        <div class="cal-time">${timeStr}</div>
+        <div class="cal-event">
+          <span class="impact-dot ${impactClass}"></span>
+          <span class="cal-country">${e.country || ''}</span>
+          ${e.event}
+        </div>
+        <div class="cal-actual">${e.actual || '—'}</div>
+      </div>
+    `;
   }).join('');
 }
 
-function renderCalendarFallback(){
-  const list = document.getElementById('calList');
-  list.innerHTML = FALLBACK_CALENDAR.map(c=>{
-    const dotClass = c.impact==='high'?'impact-high':(c.impact==='med'?'impact-med':'impact-low');
-    return `<div class="cal-item">
-      <div class="cal-time">${c.time}</div>
-      <div class="cal-event"><span class="impact-dot ${dotClass}"></span><span class="cal-country">${c.country}</span>${c.event}</div>
-      <div class="cal-actual">${c.actual}</div>
-    </div>`;
-  }).join('');
-}
-
-function renderBias(){
-  const grid = document.getElementById('biasGrid');
-  grid.innerHTML = biases.map(b=>{
-    const arrowClass = b.dir==='up'?'arrow-up':(b.dir==='down'?'arrow-down':'arrow-flat');
-    const arrow = b.dir==='up'?'↑ BULLISH':(b.dir==='down'?'↓ BEARISH':'→ NEUTRE');
-    return `<div class="bias-cell">
-      <div class="bias-asset">${b.asset}</div>
-      <div class="bias-dir ${arrowClass}">${arrow}</div>
-      <div class="bias-note">${b.note}</div>
-    </div>`;
-  }).join('');
-}
-renderBias();
-
-(function(){
-  const score = 62;
-  const circumference = 2 * Math.PI * 54;
-  const offset = circumference - (score/100)*circumference;
+function updateGauge(score){
   const fill = document.getElementById('gaugeFill');
-  fill.setAttribute('stroke-dasharray', circumference.toFixed(1));
-  requestAnimationFrame(()=>{ fill.style.strokeDashoffset = offset.toFixed(1); });
-  const color = score>=70?'var(--up)':(score>=45?'var(--amber)':'var(--down)');
-  fill.setAttribute('stroke', color);
-})();
+  const scoreEl = document.getElementById('gaugeScore');
+  scoreEl.textContent = score;
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+  fill.style.strokeDasharray = `${circumference}`;
+  fill.style.strokeDashoffset = `${offset}`;
+}
 
 async function loadDashboard(){
-  const banner = document.getElementById('dashSourceBanner');
-  const topBanner = document.getElementById('topBannerText');
-  if(!dataCfg.url || !dataCfg.alphaKey){
-    renderTickersFallback();
-    renderCalendarFallback();
-    document.getElementById('updatedAt').textContent = "Snapshot du : " + FALLBACK_SNAPSHOT_LABEL;
-    if(banner) banner.textContent = "📌 Données figées — configure Alpha Vantage dans Réglages.";
-    if(topBanner) topBanner.innerHTML = '⚠ Configure Alpha Vantage dans Réglages pour des prix live.';
-    return;
-  }
-  if(banner) banner.textContent = "⏳ Récupération des données live…";
-  
-  const [quotesResult, calendarResult] = await Promise.all([fetchQuotes(), fetchCalendar()]);
-  const quotes = quotesResult.quotes;
-  const events = calendarResult?.events || null;
-  const calSource = calendarResult?.source || null;
+  renderBiases();
+  updateGauge(62);
 
-  if(quotes && quotes.length){
-    renderTickersFromLive(quotes);
-  } else {
-    renderTickersFallback();
-  }
-  if(events && events.length){
-    renderCalendarFromLive(events);
-  } else {
-    renderCalendarFallback();
-  }
-  const now = new Date().toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  document.getElementById('updatedAt').textContent = "Dernière actualisation : " + now;
-  
-  if(banner){
-    const src = calSource ? (calSource==='finnhub' ? 'Finnhub' : 'ForexFactory (gratuit)') : '—';
-    banner.textContent = (quotes ? "✅ Prix : Alpha Vantage live" : "⚠️ Prix indisponibles") + " · Calendrier : " + src;
-  }
-  if(topBanner){
-    if(quotes) {
-      topBanner.style.color = 'var(--up)';
-      topBanner.innerHTML = '✅ Données de marché en direct via Alpha Vantage.';
+  const bannerText = document.getElementById('topBannerText');
+  const dashSourceBanner = document.getElementById('dashSourceBanner');
+  const updatedAt = document.getElementById('updatedAt');
+
+  if(dataCfg.alphaKey && dataCfg.url){
+    bannerText.textContent = "✓ Connexion API configurée. Chargement des données live...";
+    bannerText.style.color = "var(--up)";
+
+    const { quotes, error } = await fetchQuotes();
+    if(quotes){
+      const formatted = quotes.map(q => {
+        if(!q.ok) return { sym: q.symbol, val: "N/A", chg: "Erreur", dir: "flat" };
+        const chgVal = q.percent_change || 0;
+        const dir = chgVal > 0 ? 'up' : (chgVal < 0 ? 'down' : 'flat');
+        const sign = chgVal > 0 ? '+' : '';
+        return {
+          sym: q.symbol,
+          val: typeof q.price === 'number' ? q.price.toLocaleString('fr-FR', {maximumFractionDigits: 4}) : q.price,
+          chg: `${sign}${chgVal.toFixed(2)}%`,
+          dir
+        };
+      });
+      renderTickers(formatted);
+      dashSourceBanner.textContent = "Source : Alpha Vantage Live API";
+      updatedAt.textContent = "Snapshot du : " + new Date().toLocaleTimeString('fr-FR');
     } else {
-      topBanner.style.color = 'var(--down)';
-      topBanner.innerHTML = '⚠️ Erreur Alpha Vantage : ' + (quotesResult.error || "Abonnement ou limite atteinte.");
+      bannerText.textContent = `⚠ ${error}. Affichage des données figées.`;
+      bannerText.style.color = "var(--amber)";
+      renderTickers(FALLBACK_TICKERS);
+      dashSourceBanner.textContent = "Source : Instantané figé (Fallback)";
+      updatedAt.textContent = "Snapshot du : " + FALLBACK_SNAPSHOT_LABEL;
     }
+  } else {
+    bannerText.textContent = "⚠ Configure Alpha Vantage dans Réglages pour des prix live. Sans clé, les chiffres affichés sont un instantané figé du 23/09/2026.";
+    bannerText.style.color = "var(--amber)";
+    renderTickers(FALLBACK_TICKERS);
+    dashSourceBanner.textContent = "Source : Instantané figé (Fallback)";
+    updatedAt.textContent = "Snapshot du : " + FALLBACK_SNAPSHOT_LABEL;
   }
+
+  const calEvents = await fetchCalendar();
+  renderCalendar(calEvents);
 }
 
-document.getElementById('refreshBtn').addEventListener('click', async ()=>{
-  const btn = document.getElementById('refreshBtn');
-  btn.disabled = true;
-  btn.textContent = "ACTUALISATION…";
-  await loadDashboard();
-  btn.disabled = false;
-  btn.textContent = "↻ ACTUALISER";
-});
+document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
 
-loadDashboard();
+/* ---------------- GENERATOR ---------------- */
+let currentGenType = "flash";
 
-/* ---------------- SETTINGS IA ---------------- */
-const CFG_KEY = "macroedge_relay_cfg_v2";
-function loadCfg(){
-  try{
-    const c = JSON.parse(localStorage.getItem(CFG_KEY)) || {provider:"anthropic", key:"", model:""};
-    c.url = loadRelayUrl();
-    return c;
-  }catch(e){ return {provider:"anthropic", url:loadRelayUrl(), key:"", model:""}; }
-}
-function saveCfg(cfg){
-  try{
-    saveRelayUrl(cfg.url || "");
-    localStorage.setItem(CFG_KEY, JSON.stringify({provider:cfg.provider, key:cfg.key, model:cfg.model}));
-  }catch(e){}
-}
-let relayCfg = loadCfg();
-document.getElementById('cfgProvider').value = relayCfg.provider || "anthropic";
-document.getElementById('cfgRelayUrl').value = relayCfg.url || "";
-document.getElementById('cfgApiKey').value = relayCfg.key || "";
-document.getElementById('cfgModel').value = relayCfg.model || "";
-
-document.getElementById('cfgSaveBtn').addEventListener('click', ()=>{
-  relayCfg = {
-    provider: document.getElementById('cfgProvider').value,
-    url: document.getElementById('cfgRelayUrl').value.trim(),
-    key: document.getElementById('cfgApiKey').value.trim(),
-    model: document.getElementById('cfgModel').value.trim()
-  };
-  saveCfg(relayCfg);
-  dataCfg.url = relayCfg.url;
-  const msg = document.getElementById('cfgSaveMsg');
-  msg.style.display = 'block';
-  setTimeout(()=>msg.style.display='none', 2000);
-});
-
-document.getElementById('cfgTestBtn').addEventListener('click', async ()=>{
-  const resultEl = document.getElementById('cfgTestResult');
-  resultEl.style.color = 'var(--ink-dim)';
-  resultEl.textContent = "Test en cours…";
-  if(!relayCfg.url || !relayCfg.key){
-    resultEl.style.color = 'var(--down)';
-    resultEl.textContent = "Renseigne l'URL du relais et la clé API.";
-    return;
-  }
-  try{
-    const res = await fetch(relayCfg.url, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        action:'chat',
-        provider: relayCfg.provider,
-        apiKey: relayCfg.key,
-        model: relayCfg.model || undefined,
-        messages: [{role:'user', content:'Réponds uniquement "OK".'}]
-      })
-    });
-    const data = await res.json();
-    if(!res.ok){
-      resultEl.style.color = 'var(--down)';
-      resultEl.textContent = "Échec : " + (data.error || res.status);
-      return;
-    }
-    resultEl.style.color = 'var(--up)';
-    resultEl.textContent = "Connexion OK (" + relayCfg.provider + ")";
-  }catch(e){
-    resultEl.style.color = 'var(--down)';
-    resultEl.textContent = "Erreur réseau : " + (e?.message || String(e));
-  }
-});
-
-/* TESTER LES DONNÉES ET AFFICHER LE VRAI PROBLÈME */
-document.getElementById('cfgDataTestBtn').addEventListener('click', async ()=>{
-  const resultEl = document.getElementById('cfgDataTestResult');
-  resultEl.style.color = 'var(--ink-dim)';
-  resultEl.textContent = "Test en cours…";
-  if(!dataCfg.url || !dataCfg.alphaKey){
-    resultEl.style.color = 'var(--down)';
-    resultEl.textContent = "Renseigne l'URL du relais et la clé Alpha Vantage.";
-    return;
-  }
-  try{
-    const res = await fetchQuotes();
-    if(res.quotes && res.quotes.length > 0){
-      resultEl.style.color = 'var(--up)';
-      resultEl.textContent = "OK — Données reçues avec succès !";
-    } else {
-      resultEl.style.color = 'var(--down)';
-      resultEl.textContent = "Problème — " + (res.error || "aucun ticker");
-    }
-  }catch(e){
-    resultEl.style.color = 'var(--down)';
-    resultEl.textContent = "Erreur : " + (e?.message || String(e));
-  }
-});
-
-/* ---------------- GENERATOR & JOURNAL ---------------- */
-let currentType = 'flash';
 document.getElementById('typeSeg').addEventListener('click', (e)=>{
   const btn = e.target.closest('.seg-btn');
   if(!btn) return;
   document.querySelectorAll('#typeSeg .seg-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  currentType = btn.dataset.type;
+  currentGenType = btn.dataset.type;
+  
+  const label = document.getElementById('inputLabel');
+  const input = document.getElementById('genInput');
+  if(currentGenType === 'flash'){
+    label.textContent = "TITRE / DÉCLARATION";
+    input.placeholder = "Ex: Fed's Barkin: further rate hikes may be needed...";
+  } else if(currentGenType === 'calendar'){
+    label.textContent = "RÉSULTAT MACRO";
+    input.placeholder = "Ex: US Core PCE YoY: Actuel 2.9% vs Attendu 2.8% (Précédent 2.8%)";
+  } else {
+    label.textContent = "THÈMES DU JOUR";
+    input.placeholder = "Ex: Discours Powell à venir, hausse des taux obligataires 10Y, bruits de couloir OPEP...";
+  }
 });
-
-function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-const SYSTEM_PROMPT = `Tu es "MacroEdge AI", analyste macroéconomique.
-Réponds UNIQUEMENT en JSON valide :
-{"impact":"Élevé|Moyen|Faible","sentiment_label":"Haussier|Baissier","sentiment_score":"+0.5","assets":"devise/actif","body":"Analyse au format texte..."}`;
-
-function extractJson(text){
-  try{ return JSON.parse(text); }catch(e){}
-  const brace = text.match(/\{[\s\S]*\}/);
-  if(brace){ try{ return JSON.parse(brace[0]); }catch(e){} }
-  throw new Error("Réponse non-JSON reçue.");
-}
 
 document.getElementById('genBtn').addEventListener('click', async ()=>{
-  const input = document.getElementById('genInput').value.trim();
-  if(!input && currentType !== 'brief') return;
+  const inputVal = document.getElementById('genInput').value.trim();
+  if(!inputVal) return alert("Veuillez saisir une donnée avant de générer.");
+  
+  if(!dataCfg.url || !aiCfg.apiKey){
+    return alert("Veuillez configurer l'URL du relais et votre clé API dans l'onglet Réglages.");
+  }
+
   const btn = document.getElementById('genBtn');
   btn.disabled = true;
-  btn.textContent = "ANALYSE EN COURS…";
+  btn.textContent = "ANALYSE EN COURS...";
+
+  const systemPrompt = "Tu es un analyste macroéconomique Senior pour un desk de trading institutionnel. Analyse l'information fournie et donne un impact clair, synthétique et directement exploitable sur le marché (Devises, Taux, Actions, Matières Premières). Utilise du gras pour les points clés et reste très concis.";
+  const userPrompt = `[TYPE: ${currentGenType.toUpperCase()}]\nEntrée : ${inputVal}`;
 
   try{
-    const res = await fetch(relayCfg.url, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+    const r = await fetch(dataCfg.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        provider: relayCfg.provider,
-        apiKey: relayCfg.key,
-        model: relayCfg.model || undefined,
-        system: SYSTEM_PROMPT,
-        messages: [{role:'user', content: `Type: ${currentType}\nInput: ${input}`}]
+        action: 'chat',
+        provider: aiCfg.provider,
+        apiKey: aiCfg.apiKey,
+        model: aiCfg.model || undefined,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
       })
     });
-    const data = await res.json();
-    const result = extractJson(data.text || "");
-    document.getElementById('outputBadges').innerHTML = `<span class="badge">${result.impact||'—'}</span>`;
-    document.getElementById('outputBody').textContent = result.body || "";
-    document.getElementById('outputContent').style.display = 'block';
+
+    const data = await r.json();
+    if(!r.ok) throw new Error(data.error || "Erreur de génération");
+
     document.getElementById('outputEmpty').style.display = 'none';
+    document.getElementById('outputContent').style.display = 'block';
+    
+    const badges = document.getElementById('outputBadges');
+    badges.innerHTML = `
+      <span class="badge" style="background:var(--accent-dim); color:var(--accent);">${currentGenType.toUpperCase()}</span>
+      <span class="badge" style="background:var(--panel-2); color:var(--ink-dim);">${aiCfg.provider.toUpperCase()}</span>
+    `;
+
+    // Simple auto-formatting
+    let text = data.text || "Aucune réponse générée.";
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    document.getElementById('outputBody').innerHTML = text;
+
   }catch(e){
-    alert("Erreur de génération : " + e.message);
+    alert("Erreur lors de la génération : " + e.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "GÉNÉRER L'ANALYSE";
   }
-  btn.disabled = false;
-  btn.textContent = "GÉNÉRER L'ANALYSE";
 });
 
-function renderJournal(){
-  const body = document.getElementById('journalBody');
-  const empty = document.getElementById('journalEmpty');
-  if(journal.length === 0){
-    body.innerHTML = '';
-    empty.style.display = 'block';
-  } else {
-    empty.style.display = 'none';
-    body.innerHTML = journal.map(e=>`
-      <tr>
-        <td>${e.date}</td>
-        <td>${escapeHtml(e.asset)}</td>
-        <td>${e.dir}</td>
-        <td>${escapeHtml(e.entry)}</td>
-        <td>${escapeHtml(e.exit)}</td>
-        <td>${e.pnl || '—'}%</td>
-        <td>${e.status}</td>
-        <td>${escapeHtml(e.thesis)}</td>
-        <td><button class="del-btn" data-id="${e.id}">✕</button></td>
-      </tr>
-    `).join('');
-  }
-}
-renderJournal();
+document.getElementById('copyOutputBtn').addEventListener('click', ()=>{
+  const text = document.getElementById('outputBody').innerText;
+  navigator.clipboard.writeText(text);
+  alert("Analyse copiée dans le presse-papier !");
+});
 
-document.getElementById('addTradeBtn').addEventListener('click', ()=> document.getElementById('modalOverlay').classList.add('open'));
-document.getElementById('modalCancel').addEventListener('click', ()=> document.getElementById('modalOverlay').classList.remove('open'));
-document.getElementById('modalSave').addEventListener('click', ()=>{
-  const asset = document.getElementById('mAsset').value.trim();
-  if(!asset) return;
-  journal.unshift({
-    id: Date.now(),
-    date: new Date().toLocaleDateString('fr-FR'),
-    asset,
-    dir: document.getElementById('mDir').value,
-    entry: document.getElementById('mEntry').value || "—",
-    exit: document.getElementById('mExit').value || "—",
-    pnl: document.getElementById('mPnl').value,
-    status: document.getElementById('mStatus').value,
-    thesis: document.getElementById('mThesis').value
-  });
+document.getElementById('saveToJournalBtn').addEventListener('click', ()=>{
+  const text = document.getElementById('outputBody').innerText;
+  document.getElementById('mThesis').value = text.slice(0, 300) + '...';
+  openModal();
+});
+
+/* ---------------- JOURNAL & MODAL ---------------- */
+function renderJournal(){
+  const tbody = document.getElementById('journalBody');
+  const empty = document.getElementById('journalEmpty');
+
+  if(journal.length === 0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('statCount').textContent = '0';
+    document.getElementById('statWinrate').textContent = '—';
+    document.getElementById('statPnl').textContent = '—';
+    return;
+  }
+
+  empty.style.display = 'none';
+  let wins = 0;
+  let totalClosed = 0;
+  let totalPnl = 0;
+
+  tbody.innerHTML = journal.map((t, idx) => {
+    const pnlVal = parseFloat(t.pnl) || 0;
+    if(t.status === 'Clôturé'){
+      totalClosed++;
+      if(pnlVal > 0) wins++;
+      totalPnl += pnlVal;
+    }
+
+    const pnlClass = pnlVal > 0 ? 'chg-up' : (pnlVal < 0 ? 'chg-down' : 'chg-flat');
+    const pnlStr = t.pnl ? `${pnlVal > 0 ? '+' : ''}${pnlVal}%` : '—';
+
+    return `
+      <tr>
+        <td>${t.date}</td>
+        <td><b>${t.asset}</b></td>
+        <td><span class="${t.dir === 'Long' ? 'chg-up' : 'chg-down'}">${t.dir}</span></td>
+        <td>${t.entry || '—'}</td>
+        <td>${t.exit || '—'}</td>
+        <td class="${pnlClass}">${pnlStr}</td>
+        <td>${t.status}</td>
+        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="${t.thesis}">${t.thesis || '—'}</td>
+        <td><button class="del-btn" onclick="deleteTrade(${idx})">✕</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('statCount').textContent = journal.length;
+  document.getElementById('statWinrate').textContent = totalClosed > 0 ? `${Math.round((wins/totalClosed)*100)}%` : '—';
+  const pnlEl = document.getElementById('statPnl');
+  pnlEl.textContent = `${totalPnl > 0 ? '+' : ''}${totalPnl.toFixed(1)}%`;
+  pnlEl.className = `jstat-val ${totalPnl > 0 ? 'chg-up' : (totalPnl < 0 ? 'chg-down' : '')}`;
+}
+
+function deleteTrade(idx){
+  journal.splice(idx, 1);
   saveJournal(journal);
   renderJournal();
-  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function openModal(){ document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+
+document.getElementById('addTradeBtn').addEventListener('click', openModal);
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+
+document.getElementById('modalSave').addEventListener('click', ()=>{
+  const asset = document.getElementById('mAsset').value.trim();
+  if(!asset) return alert("Veuillez saisir un actif.");
+
+  const entry = {
+    date: new Date().toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}),
+    asset,
+    dir: document.getElementById('mDir').value,
+    status: document.getElementById('mStatus').value,
+    entry: document.getElementById('mEntry').value.trim(),
+    exit: document.getElementById('mExit').value.trim(),
+    pnl: document.getElementById('mPnl').value.trim(),
+    thesis: document.getElementById('mThesis').value.trim()
+  };
+
+  journal.unshift(entry);
+  saveJournal(journal);
+  renderJournal();
+  closeModal();
+
+  // Reset inputs
+  document.getElementById('mAsset').value = '';
+  document.getElementById('mEntry').value = '';
+  document.getElementById('mExit').value = '';
+  document.getElementById('mPnl').value = '';
+  document.getElementById('mThesis').value = '';
 });
+
+/* ---------------- INITIALIZATION ---------------- */
+loadDashboard();
+renderJournal();
 </script>
 </body>
 </html>
