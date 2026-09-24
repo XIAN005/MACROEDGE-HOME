@@ -29,7 +29,6 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
-:root:not([data-theme="light"]){ }
 @media (prefers-color-scheme:light){
   :root:not([data-theme="dark"]){
     --bg:#f3f5f6; --panel:#ffffff; --panel-2:#f8f9fa; --line:#dde2e5; --line-soft:#e8ebed;
@@ -203,12 +202,8 @@ textarea:focus, input:focus, select:focus{border-color:var(--accent);}
   border:1px solid var(--line); padding:8px 13px; border-radius:7px; cursor:pointer;
 }
 .mini-btn:hover{color:var(--ink); border-color:var(--ink-faint);}
-.loading-dots{font-family:var(--mono); font-size:12px; color:var(--ink-faint);}
 .badge-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
 .badge{font-family:var(--mono); font-size:10.5px; padding:4px 9px; border-radius:5px; border:1px solid var(--line);}
-.badge-impact-Élevé{color:var(--down); border-color:var(--down);}
-.badge-impact-Moyen{color:var(--amber); border-color:var(--amber);}
-.badge-impact-Faible{color:var(--ink-faint);}
 
 /* ---------- JOURNAL ---------- */
 .journal-header{display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:16px; flex-wrap:wrap;}
@@ -228,12 +223,6 @@ table.trades th{
 }
 table.trades td{padding:11px 14px; border-bottom:1px solid var(--line-soft); font-size:12.5px; white-space:nowrap;}
 table.trades tr:last-child td{border-bottom:none;}
-.pnl-pos{color:var(--up); font-family:var(--mono);}
-.pnl-neg{color:var(--down); font-family:var(--mono);}
-.dir-long{color:var(--up); font-family:var(--mono); font-size:11px;}
-.dir-short{color:var(--down); font-family:var(--mono); font-size:11px;}
-.status-open{color:var(--amber); font-family:var(--mono); font-size:11px;}
-.status-closed{color:var(--ink-faint); font-family:var(--mono); font-size:11px;}
 .del-btn{background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:14px; padding:2px 6px;}
 .del-btn:hover{color:var(--down);}
 .journal-empty{padding:50px 20px; text-align:center; color:var(--ink-faint); font-size:13px;}
@@ -263,23 +252,11 @@ table.trades tr:last-child td{border-bottom:none;}
 }
 
 .foot-note{font-size:11px; color:var(--ink-faint); margin-top:26px; line-height:1.6; padding-top:16px; border-top:1px solid var(--line);}
-
-.stale-banner{
-  display:flex; align-items:center; gap:10px; background:var(--accent-dim);
-  border:1px solid var(--accent); border-radius:8px; padding:11px 15px; margin-bottom:16px;
-  font-size:12.5px; color:var(--ink);
-}
-.stale-banner b{white-space:nowrap;}
-.data-age{font-family:var(--mono); font-size:10px; color:var(--ink-faint); margin-top:3px;}
 .gen-disclaimer{
   font-size:11.5px; color:var(--ink-faint); background:var(--panel-2); border:1px solid var(--line);
   border-radius:8px; padding:10px 13px; margin-top:14px; line-height:1.5;
 }
 .consent-note{font-size:11px; color:var(--ink-faint); margin-top:8px;}
-.err-box{
-  background:rgba(255,92,92,.08); border:1px solid var(--down); border-radius:8px;
-  padding:12px 14px; font-size:12.5px; color:var(--down); margin:0 0 12px;
-}
 </style>
 </head>
 <body>
@@ -349,7 +326,7 @@ table.trades tr:last-child td{border-bottom:none;}
               </div>
               <div class="edge-detail">
                 <div class="edge-verdict" id="edgeVerdict">Conviction Modérée — Dollar Hawkish</div>
-                <div class="edge-sub" id="edgeSub">L'alignement entre le repricing des taux Fed, la force du DXY et la compression de la prime de risque géopolitique favorise un biais USD long tactique, tempéré par un positionnement déjà étiré sur le long dollar.</div>
+                <div class="edge-sub" id="edgeSub">L'alignement entre le repricing des taux Fed, la force du DXY et la compression de la prime de risque géopolitique favorise un biais USD long tactique.</div>
                 <div class="edge-components">
                   <div class="edge-comp-row"><span class="edge-comp-label">POLITIQUE MON.</span><div class="edge-comp-bar"><div class="edge-comp-fill" style="width:78%;background:var(--up);"></div></div><span class="edge-comp-val">78</span></div>
                   <div class="edge-comp-row"><span class="edge-comp-label">MOMENTUM</span><div class="edge-comp-bar"><div class="edge-comp-fill" style="width:64%;background:var(--amber);"></div></div><span class="edge-comp-val">64</span></div>
@@ -371,11 +348,11 @@ table.trades tr:last-child td{border-bottom:none;}
 
         <div class="card intermarket">
           <div class="section-label" style="margin-bottom:8px;">PRESSION INTER-MARCHÉS</div>
-          <b>Divergence taux/or :</b> le repricing hawkish (10Y ~4,96%) n'a pas cassé le régime haussier structurel de l'or (+15% sur 12 mois) — la demande officielle chinoise et l'incertitude géopolitique résiduelle absorbent la pression des taux réels.
+          <b>Divergence taux/or :</b> le repricing hawkish (10Y ~4,96%) n'a pas cassé le régime haussier structurel de l'or.
           <br><br>
-          <b>Pétrole vs inflation :</b> le Brent chute (6e séance de baisse consécutive) sur désescalade Iran, ce qui retire un argument haussier à la Fed — à surveiller si cela infléchit le discours des gouverneurs cette semaine.
+          <b>Pétrole vs inflation :</b> le Brent chute sur désescalade Iran, ce qui retire un argument haussier à la Fed.
           <br><br>
-          <b>Dollar vs risque :</b> le DXY monte pendant que les indices actions US restent proches de leurs records — corrélation positive USD/risque inhabituelle, cohérente avec un narratif de rareté relative de croissance US plutôt que d'aversion au risque globale.
+          <b>Dollar vs risque :</b> le DXY monte pendant que les indices actions US restent proches de leurs records.
         </div>
 
       </div>
@@ -393,7 +370,7 @@ table.trades tr:last-child td{border-bottom:none;}
     </div>
 
     <div class="foot-note">
-      Prix de marché : Alpha Vantage en direct si configuré dans Réglages, sinon instantané figé. Calendrier économique : Finnhub ou repli gratuit ForexFactory. Le score Edge Factor, le biais synthétique par actif et la lecture inter-marchés restent une analyse qualitative rédigée manuellement — ils ne sont pas recalculés automatiquement à partir des prix live. Analyse fournie à titre informatif — ne constitue pas un conseil en investissement.
+      Prix de marché : Alpha Vantage en direct si configuré dans Réglages, sinon instantané figé.
     </div>
   </div>
 
@@ -412,18 +389,18 @@ table.trades tr:last-child td{border-bottom:none;}
         </div>
         <div class="form-group" id="inputGroup">
           <label class="form-label" id="inputLabel">TITRE / DÉCLARATION</label>
-          <textarea id="genInput" placeholder="Ex: Fed's Barkin: further rate hikes may be needed as supply shocks aren't proving short-lived"></textarea>
+          <textarea id="genInput" placeholder="Ex: Fed's Barkin: further rate hikes may be needed..."></textarea>
         </div>
         <button class="gen-btn" id="genBtn">GÉNÉRER L'ANALYSE</button>
-        <div class="gen-disclaimer" id="genDisclaimer">
-          Cette analyse est générée par un vrai appel à l'IA via <b style="color:var(--ink);">ton relais API personnel</b> — configure-le dans l'onglet Réglages. L'IA n'a pas accès au web : colle le texte complet du titre/chiffre, pas juste un mot-clé.
+        <div class="gen-disclaimer">
+          Cette analyse est générée par un vrai appel à l'IA via <b style="color:var(--ink);">ton relais API personnel</b>.
         </div>
       </div>
 
       <div class="card output-panel">
         <div id="outputEmpty" class="output-empty">
           <div style="font-family:var(--mono); font-size:22px;">▤</div>
-          <div>Sélectionne un type d'entrée, colle ton titre ou ton chiffre, puis génère.<br>Le résultat suivra le format institutionnel MacroEdge.</div>
+          <div>Sélectionne un type d'entrée, colle ton titre ou ton chiffre, puis génère.</div>
         </div>
         <div id="outputContent" style="display:none;">
           <div class="panel-pad" style="padding-bottom:0;">
@@ -460,7 +437,7 @@ table.trades tr:last-child td{border-bottom:none;}
         </thead>
         <tbody id="journalBody"></tbody>
       </table>
-      <div class="journal-empty" id="journalEmpty" style="display:none;">Aucune entrée pour l'instant. Ajoute ton premier trade ou sauvegarde une analyse depuis le générateur.</div>
+      <div class="journal-empty" id="journalEmpty" style="display:none;">Aucune entrée pour l'instant.</div>
     </div>
   </div>
 
@@ -469,9 +446,7 @@ table.trades tr:last-child td{border-bottom:none;}
     <div class="section-label">RÉGLAGES — RELAIS API</div>
     <div class="card panel-pad" style="max-width:560px;">
       <div class="panel-title">Connexion au générateur IA</div>
-      <div class="panel-hint">
-        Le générateur appelle l'IA de ton choix via un petit serveur relais que tu héberges toi-même (gratuit sur Vercel). Ta clé API n'est jamais envoyée ailleurs qu'à CE relais.
-      </div>
+      <div class="panel-hint">Le générateur appelle l'IA via un serveur relais personnel.</div>
 
       <div class="form-group">
         <label class="form-label">FOURNISSEUR IA</label>
@@ -490,12 +465,12 @@ table.trades tr:last-child td{border-bottom:none;}
       <div class="form-group">
         <label class="form-label">CLÉ API IA</label>
         <input type="text" id="cfgApiKey" placeholder="sk-ant-... / sk-... / AIza...">
-        <div class="consent-note">Stockée uniquement dans le stockage local de CE navigateur (localStorage).</div>
+        <div class="consent-note">Stockée uniquement dans votre navigateur (localStorage).</div>
       </div>
 
       <div class="form-group">
         <label class="form-label">MODÈLE (optionnel)</label>
-        <input type="text" id="cfgModel" placeholder="Ex: claude-sonnet-4-5-20250929 / gpt-4o / gemini-2.0-flash">
+        <input type="text" id="cfgModel" placeholder="Ex: claude-sonnet-4-5-20250929 / gpt-4o">
       </div>
 
       <button class="gen-btn" id="cfgSaveBtn">Enregistrer</button>
@@ -509,9 +484,7 @@ table.trades tr:last-child td{border-bottom:none;}
 
     <div class="card panel-pad" style="max-width:560px; margin-top:16px;">
       <div class="panel-title">Données de marché live</div>
-      <div class="panel-hint">
-        Utilise la <b style="color:var(--ink);">même URL de relais</b> que ci-dessus. Prix via <b style="color:var(--ink);">Alpha Vantage</b> (gratuit, 25 req/jour). Calendrier économique via <b style="color:var(--ink);">Finnhub</b> ou repli gratuit sur ForexFactory.
-      </div>
+      <div class="panel-hint">Prix en direct via <b style="color:var(--ink);">Alpha Vantage</b>.</div>
 
       <div class="form-group">
         <label class="form-label">CLÉ ALPHA VANTAGE</label>
@@ -520,7 +493,7 @@ table.trades tr:last-child td{border-bottom:none;}
 
       <div class="form-group">
         <label class="form-label">CLÉ FINNHUB (optionnelle)</label>
-        <input type="text" id="cfgFinnhubKey" placeholder="Laisse vide pour utiliser le calendrier gratuit ForexFactory">
+        <input type="text" id="cfgFinnhubKey" placeholder="Laisse vide pour ForexFactory par défaut">
       </div>
 
       <button class="gen-btn" id="cfgDataSaveBtn">Enregistrer</button>
@@ -670,15 +643,29 @@ const biases = [
 
 const QUOTE_SYMBOLS = ["EUR/USD","USD/JPY","XAU/USD"];
 
+/* FIX ALPHA VANTAGE ET GESTION DES ERREURS */
 async function fetchQuotes(){
-  if(!dataCfg.url || !dataCfg.alphaKey) return null;
+  if(!dataCfg.url || !dataCfg.alphaKey) return { quotes: null, error: "Clé API ou URL manquante" };
   try{
     const url = dataCfg.url + "?action=quotes&apiKey=" + encodeURIComponent(dataCfg.alphaKey) + "&symbols=" + encodeURIComponent(QUOTE_SYMBOLS.join(','));
     const r = await fetch(url);
+    if(!r.ok) return { quotes: null, error: `Erreur HTTP ${r.status}` };
+
     const data = await r.json();
-    if(!r.ok || !data.quotes) return null;
-    return data.quotes;
-  }catch(e){ return null; }
+
+    // Détection du taux de requêtes max dépassé sur Alpha Vantage (25/jour ou 5/min)
+    if (data.Note || data.Information) {
+      return { quotes: null, error: "Limite d'appels Alpha Vantage atteinte (25/jour max)" };
+    }
+
+    if(!data.quotes || !Array.isArray(data.quotes) || data.quotes.length === 0) {
+      return { quotes: null, error: "Aucun ticker renvoyé par l'API" };
+    }
+
+    return { quotes: data.quotes, error: null };
+  }catch(e){ 
+    return { quotes: null, error: "Erreur de connexion réseau" }; 
+  }
 }
 
 async function fetchCalendar(){
@@ -703,8 +690,8 @@ function renderTickersFromLive(quotes){
     const arrow = dir==='up'?'▲':(dir==='down'?'▼':'—');
     return `<div class="ticker">
       <div class="ticker-sym">${q.symbol}</div>
-      <div class="ticker-val">${q.price.toLocaleString('fr-FR',{maximumFractionDigits:4})}</div>
-      <div class="ticker-chg ${cls}">${arrow} ${q.percent_change>=0?'+':''}${q.percent_change.toFixed(2)}%</div>
+      <div class="ticker-val">${q.price ? q.price.toLocaleString('fr-FR',{maximumFractionDigits:4}) : '—'}</div>
+      <div class="ticker-chg ${cls}">${arrow} ${q.percent_change>=0?'+':''}${q.percent_change ? q.percent_change.toFixed(2) : 0}%</div>
       <div style="font-family:var(--mono); font-size:9px; color:var(--ink-faint); margin-top:5px;">Alpha Vantage · live</div>
     </div>`;
   }).join('');
@@ -790,11 +777,13 @@ async function loadDashboard(){
     renderCalendarFallback();
     document.getElementById('updatedAt').textContent = "Snapshot du : " + FALLBACK_SNAPSHOT_LABEL;
     if(banner) banner.textContent = "📌 Données figées — configure Alpha Vantage dans Réglages.";
-    if(topBanner) topBanner.innerHTML = '⚠ Configure Alpha Vantage dans Réglages pour des prix live. Sans clé, les chiffres sont un instantané figé.';
+    if(topBanner) topBanner.innerHTML = '⚠ Configure Alpha Vantage dans Réglages pour des prix live.';
     return;
   }
   if(banner) banner.textContent = "⏳ Récupération des données live…";
-  const [quotes, calendarResult] = await Promise.all([fetchQuotes(), fetchCalendar()]);
+  
+  const [quotesResult, calendarResult] = await Promise.all([fetchQuotes(), fetchCalendar()]);
+  const quotes = quotesResult.quotes;
   const events = calendarResult?.events || null;
   const calSource = calendarResult?.source || null;
 
@@ -809,14 +798,20 @@ async function loadDashboard(){
     renderCalendarFallback();
   }
   const now = new Date().toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  document.getElementById('updatedAt').textContent = "Dernière actualisation live : " + now;
+  document.getElementById('updatedAt').textContent = "Dernière actualisation : " + now;
+  
   if(banner){
     const src = calSource ? (calSource==='finnhub' ? 'Finnhub' : 'ForexFactory (gratuit)') : '—';
     banner.textContent = (quotes ? "✅ Prix : Alpha Vantage live" : "⚠️ Prix indisponibles") + " · Calendrier : " + src;
   }
   if(topBanner){
-    topBanner.style.color = 'var(--up)';
-    topBanner.innerHTML = quotes ? '✅ Données de marché en direct via Alpha Vantage.' : '⚠️ Vérifie ta clé Alpha Vantage dans Réglages.';
+    if(quotes) {
+      topBanner.style.color = 'var(--up)';
+      topBanner.innerHTML = '✅ Données de marché en direct via Alpha Vantage.';
+    } else {
+      topBanner.style.color = 'var(--down)';
+      topBanner.innerHTML = '⚠️ Erreur Alpha Vantage : ' + (quotesResult.error || "Abonnement ou limite atteinte.");
+    }
   }
 }
 
@@ -901,6 +896,7 @@ document.getElementById('cfgTestBtn').addEventListener('click', async ()=>{
   }
 });
 
+/* TESTER LES DONNÉES ET AFFICHER LE VRAI PROBLÈME */
 document.getElementById('cfgDataTestBtn').addEventListener('click', async ()=>{
   const resultEl = document.getElementById('cfgDataTestResult');
   resultEl.style.color = 'var(--ink-dim)';
@@ -911,12 +907,14 @@ document.getElementById('cfgDataTestBtn').addEventListener('click', async ()=>{
     return;
   }
   try{
-    const q = await fetchQuotes();
-    const c = await fetchCalendar();
-    const okQuotes = q && q.length && q.some(x=>x.ok);
-    resultEl.style.color = okQuotes ? 'var(--up)' : 'var(--down)';
-    resultEl.textContent = (okQuotes ? "OK — " : "Problème — ") +
-      (q ? q.filter(x=>x.ok).length + "/" + q.length + " tickers reçus" : "aucun ticker");
+    const res = await fetchQuotes();
+    if(res.quotes && res.quotes.length > 0){
+      resultEl.style.color = 'var(--up)';
+      resultEl.textContent = "OK — Données reçues avec succès !";
+    } else {
+      resultEl.style.color = 'var(--down)';
+      resultEl.textContent = "Problème — " + (res.error || "aucun ticker");
+    }
   }catch(e){
     resultEl.style.color = 'var(--down)';
     resultEl.textContent = "Erreur : " + (e?.message || String(e));
