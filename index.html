@@ -25,9 +25,6 @@
   --mono:'IBM Plex Mono', monospace;
   --disp:'Space Grotesk', sans-serif;
   --body:'Inter', sans-serif;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:light){
   :root:not([data-theme="dark"]){
@@ -42,13 +39,13 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
 *{box-sizing:border-box;}
 body{
-  margin:0; height:100%; background:var(--bg); color:var(--ink);
+  margin:0; min-height:100%; background:var(--bg); color:var(--ink);
   font-family:var(--body); -webkit-font-smoothing:antialiased;
 }
 ::selection{background:var(--accent-dim); color:var(--ink);}
 
 /* ---------- SHELL ---------- */
-.shell{max-width:1240px; margin:0 auto; padding:0 20px 60px;}
+.shell{max-width:1240px; margin:0 auto; padding:0 20px calc(60px + env(safe-area-inset-bottom,0px));}
 .topbar{
   position:sticky; top:0; z-index:40; background:var(--bg);
   padding-top:calc(env(safe-area-inset-top,0px) + 14px);
@@ -144,7 +141,7 @@ body{
 /* calendar */
 .cal-list{display:flex; flex-direction:column;}
 .cal-item{
-  display:grid; grid-template-columns:52px 1fr auto; gap:12px; align-items:center;
+  display:grid; grid-template-columns:78px 1fr auto; gap:12px; align-items:center;
   padding:11px 0; border-bottom:1px solid var(--line-soft);
 }
 .cal-item:last-child{border-bottom:none;}
@@ -177,7 +174,7 @@ body{
   font-size:11.5px; padding:9px 6px; cursor:pointer; transition:background .15s,color .15s;
 }
 .seg-btn.active{background:var(--accent-dim); color:var(--accent);}
-textarea, input[type=text], select{
+textarea, input[type=text], input[type=password], select{
   width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--ink);
   border-radius:8px; padding:11px 13px; font-family:var(--body); font-size:13.5px;
   resize:vertical; outline:none;
@@ -361,6 +358,7 @@ table.trades tr:last-child td{border-bottom:none;}
         <div class="card">
           <div class="panel-pad" style="padding-bottom:6px;">
             <div class="panel-title">Calendrier Économique — Cette semaine</div>
+            <div class="panel-hint" id="calSource" style="margin:4px 0 0;"></div>
           </div>
           <div class="panel-pad" style="padding-top:4px;">
             <div class="cal-list" id="calList"></div>
@@ -464,13 +462,13 @@ table.trades tr:last-child td{border-bottom:none;}
 
       <div class="form-group">
         <label class="form-label">CLÉ API IA</label>
-        <input type="text" id="cfgApiKey" placeholder="sk-ant-... / sk-... / AIza...">
+        <input type="password" autocomplete="off" id="cfgApiKey" placeholder="sk-ant-... / sk-... / AIza...">
         <div class="consent-note">Stockée uniquement dans votre navigateur (localStorage).</div>
       </div>
 
       <div class="form-group">
         <label class="form-label">MODÈLE (optionnel)</label>
-        <input type="text" id="cfgModel" placeholder="Ex: claude-3-5-sonnet-20241022 / gpt-4o">
+        <input type="text" id="cfgModel" placeholder="Ex: claude-sonnet-5-5 / gpt-4o / gemini-2.5-flash">
       </div>
 
       <button class="gen-btn" id="cfgSaveBtn">Enregistrer</button>
@@ -488,12 +486,12 @@ table.trades tr:last-child td{border-bottom:none;}
 
       <div class="form-group">
         <label class="form-label">CLÉ ALPHA VANTAGE</label>
-        <input type="text" id="cfgAlphaKey" placeholder="Clé Alpha Vantage (gratuite sur alphavantage.co)">
+        <input type="password" autocomplete="off" id="cfgAlphaKey" placeholder="Clé Alpha Vantage (gratuite sur alphavantage.co)">
       </div>
 
       <div class="form-group">
         <label class="form-label">CLÉ FINNHUB (optionnelle)</label>
-        <input type="text" id="cfgFinnhubKey" placeholder="Laisse vide pour ForexFactory par défaut">
+        <input type="password" autocomplete="off" id="cfgFinnhubKey" placeholder="Laisse vide pour ForexFactory par défaut">
       </div>
 
       <button class="gen-btn" id="cfgDataSaveBtn">Enregistrer</button>
@@ -555,6 +553,23 @@ table.trades tr:last-child td{border-bottom:none;}
 /* ---------------- STATE (localStorage) ---------------- */
 const STORAGE_KEY = "macroedge_journal_v1";
 
+/* ---------------- HELPERS ---------------- */
+function esc(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function parseNum(v){ const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? 0 : n; }
+function defaultRelay(){ return /\.vercel\.app$/.test(location.hostname) ? location.origin + '/api/analyze' : ''; }
+function normalizeRelay(u){ u = (u || '').trim().replace(/\/+$/, ''); if(u && !/\/api\/analyze$/.test(u)) u += '/api/analyze'; return u; }
+async function relayFetch(url, opts){
+  let r;
+  try{ r = await fetch(url, opts); }
+  catch(e){ throw new Error("Relais injoignable (URL incorrecte, hors ligne ou CORS)."); }
+  const raw = await r.text();
+  let data = null;
+  try{ data = JSON.parse(raw); }catch(e){}
+  if(!data) throw new Error(`Le relais n'a pas renvoyé de JSON (HTTP ${r.status}). Vérifie l'URL et que api/analyze.js est bien déployé.`);
+  if(!r.ok) throw new Error(data.error || `Erreur HTTP ${r.status}`);
+  return data;
+}
+
 function loadJournal(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -611,7 +626,7 @@ function saveAiCfg(cfg){
 }
 
 let dataCfg = loadDataCfg();
-dataCfg.url = loadRelayUrl();
+dataCfg.url = loadRelayUrl() || defaultRelay();
 let aiCfg = loadAiCfg();
 
 // Populate settings forms
@@ -623,7 +638,7 @@ document.getElementById('cfgApiKey').value = aiCfg.apiKey || "";
 document.getElementById('cfgModel').value = aiCfg.model || "";
 
 document.getElementById('cfgSaveBtn').addEventListener('click', ()=>{
-  const url = document.getElementById('cfgRelayUrl').value.trim();
+  const url = normalizeRelay(document.getElementById('cfgRelayUrl').value);
   saveRelayUrl(url);
   dataCfg.url = url;
   aiCfg = {
@@ -632,13 +647,14 @@ document.getElementById('cfgSaveBtn').addEventListener('click', ()=>{
     model: document.getElementById('cfgModel').value.trim()
   };
   saveAiCfg(aiCfg);
+  document.getElementById('cfgRelayUrl').value = url;
   const msg = document.getElementById('cfgSaveMsg');
   msg.style.display = 'block';
   setTimeout(()=>msg.style.display='none', 2000);
 });
 
 document.getElementById('cfgDataSaveBtn').addEventListener('click', ()=>{
-  const url = document.getElementById('cfgRelayUrl').value.trim();
+  const url = normalizeRelay(document.getElementById('cfgRelayUrl').value);
   saveRelayUrl(url);
   dataCfg = {
     url: url,
@@ -649,7 +665,8 @@ document.getElementById('cfgDataSaveBtn').addEventListener('click', ()=>{
   const msg = document.getElementById('cfgDataSaveMsg');
   msg.style.display = 'block';
   setTimeout(()=>msg.style.display='none', 2000);
-  loadDashboard();
+  document.getElementById('cfgRelayUrl').value = url;
+  loadDashboard(true);
 });
 
 /* ---------------- DASHBOARD ---------------- */
@@ -681,23 +698,11 @@ async function fetchQuotes(){
   if(!dataCfg.url || !dataCfg.alphaKey) return { quotes: null, error: "Clé API ou URL manquante" };
   try{
     const url = dataCfg.url + "?action=quotes&apiKey=" + encodeURIComponent(dataCfg.alphaKey) + "&symbols=" + encodeURIComponent(QUOTE_SYMBOLS.join(','));
-    const r = await fetch(url);
-    if(!r.ok) return { quotes: null, error: `Erreur HTTP ${r.status}` };
-
-    const data = await r.json();
-
-    if (data.Note || data.Information) {
-      return { quotes: null, error: "Limite d'appels Alpha Vantage atteinte (25/jour max)" };
-    }
-
-    if(!data.quotes || !Array.isArray(data.quotes) || data.quotes.length === 0) {
-      return { quotes: null, error: "Aucun ticker renvoyé par l'API" };
-    }
-
+    const data = await relayFetch(url);
+    if(!Array.isArray(data.quotes) || data.quotes.length === 0) return { quotes: null, error: "Aucun ticker renvoyé par l'API" };
+    if(data.quotes.every(q => !q.ok)) return { quotes: null, error: data.quotes[0].error || "Aucun prix disponible" };
     return { quotes: data.quotes, error: null };
-  }catch(e){ 
-    return { quotes: null, error: "Erreur de connexion au serveur" };
-  }
+  }catch(e){ return { quotes: null, error: e.message }; }
 }
 
 /* FETCH CALENDAR */
@@ -706,24 +711,15 @@ async function fetchCalendar(){
   try{
     let url = dataCfg.url + "?action=calendar";
     if(dataCfg.finnhubKey) url += "&apiKey=" + encodeURIComponent(dataCfg.finnhubKey);
-    const r = await fetch(url);
-    if(!r.ok) return null;
-    const data = await r.json();
-    return data.events || null;
+    const data = await relayFetch(url);
+    return Array.isArray(data.events) ? data : null;
   }catch(e){ return null; }
 }
 
 function renderTickers(items){
-  const container = document.getElementById('tickerRow');
-  container.innerHTML = items.map(t => {
+  document.getElementById('tickerRow').innerHTML = items.map(t => {
     const chgClass = t.dir === 'up' ? 'chg-up' : (t.dir === 'down' ? 'chg-down' : 'chg-flat');
-    return `
-      <div class="ticker">
-        <div class="ticker-sym">${t.sym}</div>
-        <div class="ticker-val">${t.val}</div>
-        <div class="ticker-chg ${chgClass}">${t.chg}</div>
-      </div>
-    `;
+    return `<div class="ticker"><div class="ticker-sym">${esc(t.sym)}</div><div class="ticker-val">${esc(t.val)}</div><div class="ticker-chg ${chgClass}">${esc(t.chg)}</div></div>`;
   }).join('');
 }
 
@@ -741,23 +737,28 @@ function renderBiases(){
   }).join('');
 }
 
-function renderCalendar(events){
+function renderCalendar(data){
   const container = document.getElementById('calList');
-  const items = events || FALLBACK_CALENDAR;
+  const src = document.getElementById('calSource');
+  let items;
+  if(data){
+    const since = Date.now() - 3*3600e3;
+    items = data.events
+      .filter(e => ['high','medium','med'].includes(e.impact) && (!e.datetime || new Date(e.datetime).getTime() >= since))
+      .sort((a,b) => new Date(a.datetime||0) - new Date(b.datetime||0))
+      .slice(0, 12);
+    src.textContent = "Source : " + (data.source === 'finnhub' ? "Finnhub" : "ForexFactory") + " — impact moyen/fort";
+    if(!items.length){ container.innerHTML = '<div class="cal-event" style="color:var(--ink-faint)">Aucun événement important à venir.</div>'; return; }
+  } else {
+    items = FALLBACK_CALENDAR;
+    src.textContent = "⚠ Données de démonstration figées (relais indisponible ou non configuré)";
+  }
   container.innerHTML = items.map(e => {
-    const timeStr = e.datetime ? new Date(e.datetime).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : (e.time || '--:--');
+    const d = e.datetime ? new Date(e.datetime) : null;
+    const timeStr = d && !isNaN(d) ? d.toLocaleString('fr-FR', {weekday:'short', hour:'2-digit', minute:'2-digit'}) : (e.time || '--:--');
     const impactClass = e.impact === 'high' ? 'impact-high' : (e.impact === 'med' || e.impact === 'medium' ? 'impact-med' : 'impact-low');
-    return `
-      <div class="cal-item">
-        <div class="cal-time">${timeStr}</div>
-        <div class="cal-event">
-          <span class="impact-dot ${impactClass}"></span>
-          <span class="cal-country">${e.country || ''}</span>
-          ${e.event}
-        </div>
-        <div class="cal-actual">${e.actual || '—'}</div>
-      </div>
-    `;
+    const right = e.actual || (e.forecast ? 'Prév. ' + e.forecast : '—');
+    return `<div class="cal-item"><div class="cal-time">${esc(timeStr)}</div><div class="cal-event"><span class="impact-dot ${impactClass}"></span><span class="cal-country">${esc(e.country)}</span>${esc(e.event)}</div><div class="cal-actual">${esc(right)}</div></div>`;
   }).join('');
 }
 
@@ -772,55 +773,52 @@ function updateGauge(score){
   fill.style.strokeDashoffset = `${offset}`;
 }
 
-async function loadDashboard(){
+const QCACHE_KEY = "macroedge_quotes_cache";
+async function loadDashboard(force){
+  const refreshBtn = document.getElementById('refreshBtn');
+  refreshBtn.disabled = true;
   renderBiases();
   updateGauge(62);
-
   const bannerText = document.getElementById('topBannerText');
   const dashSourceBanner = document.getElementById('dashSourceBanner');
   const updatedAt = document.getElementById('updatedAt');
-
-  if(dataCfg.alphaKey && dataCfg.url){
-    bannerText.textContent = "✓ Connexion API configurée. Chargement des données live...";
-    bannerText.style.color = "var(--up)";
-
-    const { quotes, error } = await fetchQuotes();
-    if(quotes){
-      const formatted = quotes.map(q => {
-        if(!q.ok) return { sym: q.symbol, val: "N/A", chg: "Erreur", dir: "flat" };
-        const chgVal = q.percent_change || 0;
-        const dir = chgVal > 0 ? 'up' : (chgVal < 0 ? 'down' : 'flat');
-        const sign = chgVal > 0 ? '+' : '';
-        return {
-          sym: q.symbol,
-          val: typeof q.price === 'number' ? q.price.toLocaleString('fr-FR', {maximumFractionDigits: 4}) : q.price,
-          chg: `${sign}${chgVal.toFixed(2)}%`,
-          dir
-        };
-      });
-      renderTickers(formatted);
-      dashSourceBanner.textContent = "Source : Alpha Vantage Live API";
-      updatedAt.textContent = "Snapshot du : " + new Date().toLocaleTimeString('fr-FR');
-    } else {
-      bannerText.textContent = `⚠ ${error}. Affichage des données figées.`;
-      bannerText.style.color = "var(--amber)";
-      renderTickers(FALLBACK_TICKERS);
-      dashSourceBanner.textContent = "Source : Instantané figé (Fallback)";
-      updatedAt.textContent = "Snapshot du : " + FALLBACK_SNAPSHOT_LABEL;
-    }
-  } else {
-    bannerText.textContent = "⚠ Configure Alpha Vantage dans Réglages pour des prix live. Sans clé, les chiffres affichés sont un instantané figé du 23/09/2026.";
-    bannerText.style.color = "var(--amber)";
+  const fallback = (msg) => {
+    bannerText.textContent = msg; bannerText.style.color = "var(--amber)";
     renderTickers(FALLBACK_TICKERS);
     dashSourceBanner.textContent = "Source : Instantané figé (Fallback)";
     updatedAt.textContent = "Snapshot du : " + FALLBACK_SNAPSHOT_LABEL;
-  }
-
-  const calEvents = await fetchCalendar();
-  renderCalendar(calEvents);
+  };
+  try{
+    if(dataCfg.alphaKey && dataCfg.url){
+      bannerText.textContent = "Chargement des données live..."; bannerText.style.color = "var(--ink-dim)";
+      let res = null;
+      if(!force){
+        try{ const c = JSON.parse(localStorage.getItem(QCACHE_KEY)); if(c && c.url === dataCfg.url && Date.now() - c.ts < 600000) res = { quotes: c.quotes, error: null }; }catch(e){}
+      }
+      if(!res){
+        res = await fetchQuotes();
+        if(res.quotes){ try{ localStorage.setItem(QCACHE_KEY, JSON.stringify({ts: Date.now(), url: dataCfg.url, quotes: res.quotes})); }catch(e){} }
+      }
+      if(res.quotes){
+        renderTickers(res.quotes.map(q => q.ok ? {
+          sym: q.symbol,
+          val: Number(q.price).toLocaleString('fr-FR', {maximumFractionDigits: 4}),
+          chg: q.datetime ? 'MAJ ' + String(q.datetime).replace('T',' ').slice(11,16) + ' UTC' : 'live',
+          dir: 'flat'
+        } : { sym: q.symbol, val: "N/A", chg: q.error || "Erreur", dir: "flat" }));
+        bannerText.textContent = "✓ Prix live chargés (Alpha Vantage, plan gratuit : pas de variation journalière).";
+        bannerText.style.color = "var(--up)";
+        dashSourceBanner.textContent = "Source : Alpha Vantage Live API";
+        updatedAt.textContent = "Snapshot du : " + new Date().toLocaleTimeString('fr-FR');
+      } else fallback(`⚠ ${res.error}. Affichage des données figées.`);
+    } else {
+      fallback("⚠ Configure Alpha Vantage dans Réglages pour des prix live. Sans clé, les chiffres affichés sont un instantané figé du 23/09/2026.");
+    }
+    renderCalendar(await fetchCalendar());
+  } finally { refreshBtn.disabled = false; }
 }
 
-document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
+document.getElementById('refreshBtn').addEventListener('click', () => loadDashboard(true));
 
 /* ---------------- GENERATOR ---------------- */
 let currentGenType = "flash";
@@ -862,7 +860,7 @@ document.getElementById('genBtn').addEventListener('click', async ()=>{
   const userPrompt = `[TYPE: ${currentGenType.toUpperCase()}]\nEntrée : ${inputVal}`;
 
   try{
-    const r = await fetch(dataCfg.url, {
+    const data = await relayFetch(dataCfg.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -875,9 +873,6 @@ document.getElementById('genBtn').addEventListener('click', async ()=>{
       })
     });
 
-    const data = await r.json();
-    if(!r.ok) throw new Error(data.error || "Erreur de génération");
-
     document.getElementById('outputEmpty').style.display = 'none';
     document.getElementById('outputContent').style.display = 'block';
     
@@ -889,7 +884,7 @@ document.getElementById('genBtn').addEventListener('click', async ()=>{
 
     // Simple auto-formatting
     let text = data.text || "Aucune réponse générée.";
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    text = esc(text).replace(/^#{1,6}\s*(.+)$/gm, '**$1**').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     document.getElementById('outputBody').innerHTML = text;
 
   }catch(e){
@@ -902,13 +897,15 @@ document.getElementById('genBtn').addEventListener('click', async ()=>{
 
 document.getElementById('copyOutputBtn').addEventListener('click', ()=>{
   const text = document.getElementById('outputBody').innerText;
-  navigator.clipboard.writeText(text);
-  alert("Analyse copiée dans le presse-papier !");
+  const ok = () => alert("Analyse copiée dans le presse-papier !");
+  const ko = () => alert("Copie impossible : sélectionne le texte manuellement.");
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(ok, ko);
+  else{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); let done=false; try{done=document.execCommand('copy');}catch(e){} ta.remove(); done?ok():ko(); }
 });
 
 document.getElementById('saveToJournalBtn').addEventListener('click', ()=>{
   const text = document.getElementById('outputBody').innerText;
-  document.getElementById('mThesis').value = text.slice(0, 300) + '...';
+  document.getElementById('mThesis').value = text.length > 300 ? text.slice(0, 300) + '...' : text;
   openModal();
 });
 
@@ -923,6 +920,7 @@ function renderJournal(){
     document.getElementById('statCount').textContent = '0';
     document.getElementById('statWinrate').textContent = '—';
     document.getElementById('statPnl').textContent = '—';
+    document.getElementById('statPnl').className = 'jstat-val';
     return;
   }
 
@@ -932,7 +930,7 @@ function renderJournal(){
   let totalPnl = 0;
 
   tbody.innerHTML = journal.map((t, idx) => {
-    const pnlVal = parseFloat(t.pnl) || 0;
+    const pnlVal = parseNum(t.pnl);
     if(t.status === 'Clôturé'){
       totalClosed++;
       if(pnlVal > 0) wins++;
@@ -944,14 +942,14 @@ function renderJournal(){
 
     return `
       <tr>
-        <td>${t.date}</td>
-        <td><b>${t.asset}</b></td>
-        <td><span class="${t.dir === 'Long' ? 'chg-up' : 'chg-down'}">${t.dir}</span></td>
-        <td>${t.entry || '—'}</td>
-        <td>${t.exit || '—'}</td>
+        <td>${esc(t.date)}</td>
+        <td><b>${esc(t.asset)}</b></td>
+        <td><span class="${t.dir === 'Long' ? 'chg-up' : 'chg-down'}">${esc(t.dir)}</span></td>
+        <td>${esc(t.entry) || '—'}</td>
+        <td>${esc(t.exit) || '—'}</td>
         <td class="${pnlClass}">${pnlStr}</td>
-        <td>${t.status}</td>
-        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="${t.thesis}">${t.thesis || '—'}</td>
+        <td>${esc(t.status)}</td>
+        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="${esc(t.thesis)}">${esc(t.thesis) || '—'}</td>
         <td><button class="del-btn" onclick="deleteTrade(${idx})">✕</button></td>
       </tr>
     `;
@@ -975,6 +973,8 @@ function closeModal(){ document.getElementById('modalOverlay').classList.remove(
 
 document.getElementById('addTradeBtn').addEventListener('click', openModal);
 document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
 document.getElementById('modalSave').addEventListener('click', ()=>{
   const asset = document.getElementById('mAsset').value.trim();
@@ -1002,6 +1002,44 @@ document.getElementById('modalSave').addEventListener('click', ()=>{
   document.getElementById('mExit').value = '';
   document.getElementById('mPnl').value = '';
   document.getElementById('mThesis').value = '';
+});
+
+/* ---------------- TESTS (Réglages) ---------------- */
+document.getElementById('cfgTestBtn').addEventListener('click', async ()=>{
+  const out = document.getElementById('cfgTestResult');
+  const url = normalizeRelay(document.getElementById('cfgRelayUrl').value);
+  const apiKey = document.getElementById('cfgApiKey').value.trim();
+  if(!url || !apiKey){ out.style.color='var(--amber)'; out.textContent='Renseigne l\'URL du relais et la clé API.'; return; }
+  out.style.color='var(--ink-dim)'; out.textContent='Test en cours...';
+  try{
+    const data = await relayFetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      action:'chat', provider: document.getElementById('cfgProvider').value, apiKey,
+      model: document.getElementById('cfgModel').value.trim() || undefined,
+      messages:[{role:'user', content:'Réponds uniquement OK.'}] })});
+    out.style.color='var(--up)'; out.textContent = '✓ Connexion OK — réponse : ' + (data.text || '(vide)').slice(0,80);
+  }catch(e){ out.style.color='var(--down)'; out.textContent = '✕ ' + e.message; }
+});
+
+document.getElementById('cfgDataTestBtn').addEventListener('click', async ()=>{
+  const out = document.getElementById('cfgDataTestResult');
+  const url = normalizeRelay(document.getElementById('cfgRelayUrl').value);
+  const key = document.getElementById('cfgAlphaKey').value.trim();
+  const fkey = document.getElementById('cfgFinnhubKey').value.trim();
+  if(!url){ out.style.color='var(--amber)'; out.textContent='Renseigne l\'URL du relais.'; return; }
+  out.style.color='var(--ink-dim)'; out.textContent='Test en cours...';
+  const lines = [];
+  try{
+    const c = await relayFetch(url + '?action=calendar' + (fkey ? '&apiKey=' + encodeURIComponent(fkey) : ''));
+    lines.push(`✓ Calendrier : ${c.events.length} événements (${c.source})`);
+  }catch(e){ lines.push('✕ Calendrier : ' + e.message); }
+  if(key){
+    try{
+      const q = await relayFetch(url + '?action=quotes&symbols=EUR%2FUSD&apiKey=' + encodeURIComponent(key));
+      const x = q.quotes[0];
+      lines.push(x.ok ? `✓ Prix : EUR/USD = ${x.price}` : '✕ Prix : ' + x.error);
+    }catch(e){ lines.push('✕ Prix : ' + e.message); }
+  } else lines.push('— Prix : clé Alpha Vantage non renseignée');
+  out.style.color='var(--ink)'; out.innerHTML = lines.map(esc).join('<br>');
 });
 
 /* ---------------- INITIALIZATION ---------------- */
