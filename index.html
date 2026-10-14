@@ -93,13 +93,13 @@ const store = {
 const PAIRS = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD', 'XAU/USD'];
 const DEFAULTS = {
   keys: { gemini: '', gemini2: '', twelvedata: '', alphavantage: '', finnhub: '' },
-  model: 'gemini-2.5-flash', relays: [], primary: 'auto',
+  model: 'gemini-3.8-flash', relays: [], primary: 'auto',
   order: { history: ['twelvedata', 'alphavantage', 'frankfurter', 'stooq'], calendar: ['finnhub', 'forexfactory'], news: ['finnhub', 'rss', 'alphavantage'] },
   disabled: {}, active: Object.fromEntries(PAIRS.map(p => [p, true])),
   weights: { policy: 30, momentum: 30, structure: 15, risk: 10, news: 15 },
   rates: {}, demo: false, avNews: false, theme: 'dark'
 };
-function getSettings() { const s = store.get('settings', {}); return { ...DEFAULTS, ...s, keys: { ...DEFAULTS.keys, ...s.keys }, order: { ...DEFAULTS.order, ...s.order }, weights: { ...DEFAULTS.weights, ...s.weights }, active: { ...DEFAULTS.active, ...s.active } }; }
+function getSettings() { const s = store.get('settings', {}); if (s.model === 'gemini-2.5-flash') s.model = 'gemini-3.8-flash'; return { ...DEFAULTS, ...s, keys: { ...DEFAULTS.keys, ...s.keys }, order: { ...DEFAULTS.order, ...s.order }, weights: { ...DEFAULTS.weights, ...s.weights }, active: { ...DEFAULTS.active, ...s.active } }; }
 function saveSettings(s) { store.set('settings', s); }
 function applyTheme() { document.documentElement.dataset.theme = getSettings().theme; }
 $('#themeBtn').onclick = () => { const s = getSettings(); s.theme = s.theme === 'dark' ? 'light' : 'dark'; saveSettings(s); applyTheme(); };
