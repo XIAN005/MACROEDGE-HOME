@@ -193,7 +193,7 @@ async function fetchHistory(sym, { force = false } = {}) {
   if (!sym.includes('XAU') && !Health.blocked('frankfurter')) { // secours navigateur : Frankfurter autorise le CORS
     try {
       const [f, t] = sym.split('/'), start = new Date(Date.now() - 190 * 864e5).toISOString().slice(0, 10);
-      const j = await (await fetch(`https://api.frankfurter.app/${start}..?from=${f}&to=${t}`)).json();
+      const j = await (await fetch(`https://api.frankfurter.dev/v1/${start}..?base=${f}&symbols=${t}`)).json();
       const c = Object.keys(j.rates).sort().map(d => { const p = j.rates[d][t]; return { date: d, open: p, high: p, low: p, close: p }; });
       validateCandles(c); Health.ok('frankfurter');
       const r = { symbol: sym, candles: c, source: 'frankfurter (direct navigateur)', fetched_at: new Date().toISOString() }; store.set(ck, r); return withMeta(r, false);
@@ -440,11 +440,11 @@ const setProg = (t, pct) => { const p = $('#prog'); if (p) p.innerHTML = `<div c
 const askModal = (html, yes = 'Continuer') => new Promise(res => { openModal(`${html}<p><button class="btn pri" id="mY">${yes}</button> <button class="btn" id="mN">Annuler</button></p>`); $('#mY').onclick = () => { closeModal(); res(true); }; $('#mN').onclick = () => { closeModal(); res(false); }; });
 
 /* ---- chargement séquentiel, budget de quota, pause par minute ---- */
-const CALLS = {}, PERMIN = { alphavantage: 5, twelvedata: 8 };
+const CALLS = {}, PERMIN = { alphavantage: 4, twelvedata: 7 };
 async function minuteGate(src) {
   const p = String(src).split(/[ _]/)[0]; if (!PERMIN[p]) return; const now = Date.now();
   CALLS[p] = (CALLS[p] || []).filter(t => now - t < 6e4); CALLS[p].push(now);
-  if (CALLS[p].length >= PERMIN[p]) { setProg('Pause de 13 s (quota par minute)…'); await sleep(13000); }
+  if (CALLS[p].length >= PERMIN[p]) { const w = Math.max(1000, 60500 - (now - CALLS[p][0])); setProg(`Pause de ${Math.round(w / 1000)} s (quota par minute)…`); await sleep(w); CALLS[p] = CALLS[p].filter(t => Date.now() - t < 6e4); }
 }
 async function loadAll(force) {
   if (APP.busy) return; APP.busy = true;
@@ -461,7 +461,7 @@ async function loadAll(force) {
       toast(msg, 9000);
     }
     if (force && need.length && !(await askModal(`<p>${esc(msg)}</p>`))) return;
-    setProg(msg, 0); const doQuotes = keyed.length > 0 && rem >= need.length + pairs.length;
+    setProg(msg, 0); const doQuotes = keyed.length > 0 && pairs.length <= 3 && rem >= need.length + pairs.length;
     APP.histErr = {};
     for (let i = 0; i < pairs.length; i++) {
       const p = pairs[i]; setProg(`${i + 1}/${pairs.length} paires — ${p}`, Math.round(i / pairs.length * 100));
@@ -607,7 +607,7 @@ function renderNews() {
   const f = APP.newsF, now = Date.now(), list = (N.news || []).filter(n => (!f.cur || n.currencies.includes(f.cur)) && (!f.cat || n.sentiment?.categorie === f.cat));
   const strength = n => (n.sentiment?.currency_impacts || []).reduce((m, i) => Math.max(m, i.force), 0);
   const moves = (N.news || []).filter(n => now - Date.parse(n.published_at) < 864e5 && strength(n) > 0).sort((a, b) => strength(b) - strength(a)).slice(0, 5);
-  const sb = n => { const i = n.sentiment?.currency_impacts?.filter(x => x.force > 0) || []; return i.length ? i.map(x => `<span class="badge ${x.direction === 'haussier' ? '' : x.direction === 'baissier' ? 'na' : ''}">${esc(x.currency)} ${x.direction === 'haussier' ? '▲' : x.direction === 'baissier' ? '▼' : '='}${x.force}</span>`).join('') + (n.sentiment.heuristic ? '<span class="badge stale">heuristique</span>' : '') : '<span class="badge">sans sentiment</span>'; };
+  const sb = n => { const i = n.sentiment?.currency_impacts?.filter(x => x.force > 0) || []; return i.length ? i.map(x => `<span class="badge ${x.direction === 'haussier' ? '' : x.direction === 'baissier' ? 'na' : ''}">${esc(x.currency)} ${x.direction === 'haussier' ? '▲' : x.direction === 'baissier' ? '▼' : '='}${x.force}</span>`).join('') + (n.sentiment.heuristic ? '<span class="badge stale">heuristique</span>' : '') : (n.sentiment ? '<span class="badge">neutre</span>' : '<span class="badge">sans sentiment</span>'); };
   $('#newsView').innerHTML = `<div class="card"><b>Ce qui bouge (24 h)</b><ul>${moves.map(n => `<li>${esc(n.title)} ${sb(n)}</li>`).join('') || '<li class="mu">Rien de marquant.</li>'}</ul></div>
   <div class="card"><b>État des sources</b> ${badge(N)} ${Object.entries(N.sources_status || {}).map(([k, v]) => `<span class="badge ${v.ok ? '' : 'na'}">${esc(k)} : ${v.ok ? v.count + ' items' : esc(v.error)}</span>`).join('')}${N.na ? `<p class="dn">${esc(N.na)}</p>` : ''}</div>
   <div class="card"><select data-act="nf-cur">${['', 'USD', 'EUR', 'GBP', 'JPY', 'CHF', 'AUD', 'CAD', 'NZD', 'XAU', 'WTI'].map(c => `<option value="${c}" ${f.cur === c ? 'selected' : ''}>${c || 'Toutes devises'}</option>`).join('')}</select>
