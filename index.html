@@ -236,7 +236,7 @@ async function fetchNews({ force = false } = {}) {
   if (c && !force && Date.now() - Date.parse(c.fetched_at) < 10 * 6e4) return withMeta(c, false);
   try {
     const s = getSettings(), av = s.avNews && Health.today('alphavantage') < 0.8 * DAILY_LIMIT.alphavantage;
-    const r = await relay('news', av ? { av_news: '1' } : {}); store.set('news', r); return withMeta(r, false);
+    const r = await relay('news', av ? { av_news: '1' } : {}); store.set('news', r); Object.entries(r.sources_status || {}).forEach(([k, v]) => { if (RSS_NAMES.includes(k)) { Health.bump(k); v.ok ? Health.ok(k) : Health.fail(k, v.error); } }); return withMeta(r, false);
   } catch (e) {
     if (c && Date.now() - Date.parse(c.fetched_at) < 72 * 36e5) return withMeta(c, true);
     return { news: [], sources_status: {}, fetched_at: new Date().toISOString(), stale: false, age_minutes: 0, na: 'aucune news : ' + e.message };
@@ -703,7 +703,7 @@ function saveFromForm() {
 }
 function renderSettings() {
   const s = getSettings(), sum = Object.values(s.weights).reduce((a, b) => a + (+b || 0), 0);
-  const ph = PROV.map(n => { const x = Health.get(n), st = Health.state(n); return `<tr><td>${esc(n)}</td><td class="${st === 'OK' ? 'up' : st === 'dégradé' || st === 'non testé' ? 'mu' : 'dn'}">${esc(st)}</td><td>${x.lastOk ? fmtTime(x.lastOk) : '—'}</td><td style="white-space:normal">${x.lastErr ? esc(x.lastErr.msg) + ' (' + fmtTime(x.lastErr.at) + ')' : '—'}</td><td>${Health.today(n)}${DAILY_LIMIT[n] ? ' / ' + DAILY_LIMIT[n] : ''}</td></tr>`; }).join('');
+  const symRows = Object.entries(Health.all()).filter(([k, x]) => k.includes(':') && x.until > Date.now()).map(([k, x]) => `<tr><td>${esc(k)}</td><td class="dn">paire ignorée jusqu'à ${new Date(x.until).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td><td>—</td><td style="white-space:normal">${esc(x.lastErr?.msg || '')}</td><td>—</td></tr>`).join(''), ph = PROV.map(n => { const x = Health.get(n), st = Health.state(n); return `<tr><td>${esc(n)}</td><td class="${st === 'OK' ? 'up' : st === 'dégradé' || st === 'non testé' ? 'mu' : 'dn'}">${esc(st)}</td><td>${x.lastOk ? fmtTime(x.lastOk) : '—'}</td><td style="white-space:normal">${x.lastErr ? esc(x.lastErr.msg) + ' (' + fmtTime(x.lastErr.at) + ')' : '—'}</td><td>${Health.today(n)}${DAILY_LIMIT[n] ? ' / ' + DAILY_LIMIT[n] : ''}</td></tr>`; }).join('');
   $('#settingsView').innerHTML = `
   <div class="card"><b>Clés API</b> <span class="mu">(stockées dans ce navigateur, envoyées au relais, jamais loguées)</span><div class="grid">
    ${[['gemini', 'Gemini'], ['gemini2', 'Gemini (2ᵉ clé, secours)'], ['twelvedata', 'Twelve Data'], ['alphavantage', 'Alpha Vantage'], ['finnhub', 'Finnhub']].map(([k, l]) => `<label>${l}<br><input type="password" id="k-${k}" autocomplete="off" value="${esc(s.keys[k])}" style="width:100%"></label>`).join('')}
@@ -719,7 +719,7 @@ function renderSettings() {
    <table class="tbl"><tr><th>Devise</th><th>Taux dir. %</th><th>Rdt 2 ans %</th><th>Taux précédent</th><th>Rdt précédent</th><th>Date</th></tr>
    ${CURS.map(c => { const r = s.rates[c] || {}; return `<tr><td>${c}</td>${['policy', 'y2', 'policyPrev', 'y2Prev'].map(f => `<td><input id="r-${c}-${f}" value="${r[f] ?? ''}" size="6"></td>`).join('')}<td><input type="date" id="r-${c}-date" value="${esc(r.date || '')}"></td></tr>`; }).join('')}</table></div>
   <div class="card"><button class="btn pri" data-act="save">Enregistrer</button> <button class="btn" data-act="testGemini">Tester Gemini</button> <button class="btn" data-act="testData">Tester les données</button> <button class="btn" data-act="retest">Tout retester</button> <button class="btn" data-act="clear" style="border-color:var(--dn)">Effacer mes données</button><div id="testOut"></div></div>
-  <div class="card scroll"><b>Santé des sources et quotas du jour</b><table class="tbl"><tr><th>Source</th><th>État</th><th>Dernier succès</th><th>Dernière erreur</th><th>Requêtes aujourd'hui</th></tr>${ph}</table></div>`;
+  <div class="card scroll"><b>Santé des sources et quotas du jour</b><table class="tbl"><tr><th>Source</th><th>État</th><th>Dernier succès</th><th>Dernière erreur</th><th>Requêtes aujourd'hui</th></tr>${ph}${symRows}</table></div>`;
 }
 RENDER.settings = renderSettings;
 ACT.save = () => { saveFromForm(); toast('Réglages enregistrés.'); renderSettings(); };
@@ -728,6 +728,7 @@ async function runTest(what) {
   saveFromForm(); $('#testOut').innerHTML = '<p class="mu">Test en cours…</p>';
   try {
     const r = await relay('test', { what }); const res = r.results || {};
+    if (what === 'all') { const h = Health.all(); Object.keys(h).filter(k => k.includes(':')).forEach(k => delete h[k]); store.set('health', h); }
     Object.entries(res).forEach(([n, v]) => { Health.reset(n); v.ok ? Health.ok(n) : Health.fail(n, v.error, /quota|429/i.test(v.error)); });
     $('#testOut').innerHTML = '<ul>' + Object.entries(res).map(([n, v]) => `<li class="${v.ok ? 'up' : 'dn'}">${esc(n)} : ${v.ok ? 'OK ' + esc(txt(v.detail)) : esc(v.error)} <span class="mu">(${v.ms} ms)</span></li>`).join('') + '</ul>';
   } catch (e) { $('#testOut').innerHTML = `<p class="dn">${esc(e.message)}</p>`; }
