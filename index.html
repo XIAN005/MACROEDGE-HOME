@@ -156,12 +156,13 @@ const Health = {
   fail(n, msg, quota) { const x = this.get(n); x.lastErr = { msg, at: new Date().toISOString() }; if (quota) x.quotaDay = utcDay(); else if (++x.fails >= 2) x.until = Date.now() + (RSS_NAMES.includes(n) ? 5 : 10) * 6e4; this.put(n, x); },
   bump(n) { const x = this.get(n), d = utcDay(); x.req = x.req || {}; x.req[d] = (x.req[d] || 0) + 1; Object.keys(x.req).filter(k => k !== d).forEach(k => delete x.req[k]); this.put(n, x); },
   today(n) { return (this.get(n).req || {})[utcDay()] || 0; },
+  failSym(n, msg) { const x = this.get(n); x.lastErr = { msg, at: new Date().toISOString() }; x.until = Date.now() + 6 * 36e5; this.put(n, x); },
   reset(n) { const h = this.all(); if (h[n]) { h[n].fails = 0; h[n].until = 0; h[n].quotaDay = null; store.set('health', h); } },
   state(n) { const b = this.blocked(n), x = this.get(n); return b ? b : x.fails ? 'dégradé' : x.lastOk ? 'OK' : 'non testé'; }
 };
 const DAILY_LIMIT = { twelvedata: 800, alphavantage: 25, finnhub: 3600 };
-function absorbAttempts(resp) { // met à jour santé/quotas à partir des tentatives renvoyées par le relais
-  (resp?.attempts || []).forEach(a => { if (a.error === 'clé absente') return; Health.bump(a.source.split('_')[0]); Health.fail(a.source.split('_')[0], a.error, a.quota); });
+function absorbAttempts(resp, sym) { // met à jour santé/quotas à partir des tentatives renvoyées par le relais
+  (resp?.attempts || []).forEach(a => { if (a.error === 'clé absente') return; const b = a.source.split('_')[0]; Health.bump(b); const symSpecific = sym && (!a.quota) && ([400, 404, 422].includes(a.status) || /symbol|plan|grow|pro |available|bougies|aberrante|invalide|croissantes/i.test(a.error)); if (symSpecific) Health.failSym(b + ':' + sym, a.error); else Health.fail(b, a.error, a.quota); });
   if (resp?.source) { const n = resp.source.split(/[_ ]/)[0]; Health.bump(n); Health.ok(n); }
 }
 
@@ -181,15 +182,15 @@ const withMeta = (d, stale) => ({ ...d, stale: !!stale, age_minutes: ageMin(d.fe
 async function fetchHistory(sym, { force = false } = {}) {
   const ck = 'hist_' + sym, cached = store.get(ck, null), TTL = 12 * 6e4 * 60;
   if (cached && !force && Date.now() - Date.parse(cached.fetched_at) < TTL) return withMeta(cached, false);
-  const s = getSettings(), off = new Set([...(s.disabled.history || []), ...s.order.history.filter(n => Health.blocked(n))]);
+  const s = getSettings(), off = new Set([...(s.disabled.history || []), ...s.order.history.filter(n => Health.blocked(n) || Health.blocked(n + ':' + sym))]);
   let order = s.order.history.filter(n => !off.has(n));
   if (s.primary === 'twelvedata') order = ['twelvedata', ...order.filter(n => n !== 'twelvedata')];
   if (s.primary === 'alphavantage') order = ['alphavantage', ...order.filter(n => n !== 'alphavantage')];
   const errs = [];
   try {
     const r = await relay('history', { symbol: sym, order: order.join(','), ...(new URLSearchParams(location.search).get('debug_fail') ? { debug_fail: new URLSearchParams(location.search).get('debug_fail') } : {}) });
-    absorbAttempts(r); validateCandles(r.candles); store.set(ck, r); return withMeta(r, false);
-  } catch (e) { absorbAttempts(e); errs.push('relais : ' + e.message); }
+    absorbAttempts(r, sym); validateCandles(r.candles); store.set(ck, r); return withMeta(r, false);
+  } catch (e) { absorbAttempts(e, sym); errs.push('relais : ' + e.message); }
   if (!sym.includes('XAU') && !Health.blocked('frankfurter')) { // secours navigateur : Frankfurter autorise le CORS
     try {
       const [f, t] = sym.split('/'), start = new Date(Date.now() - 190 * 864e5).toISOString().slice(0, 10);
@@ -567,9 +568,9 @@ RENDER.deep = renderDeep;
 function buildContext(r) {
   const cur = parsePair(r.sym), ev = (APP.cal?.events || []).filter(e => cur.includes(e.currency) && Date.parse(e.time) > Date.now() - 36e5 && Date.parse(e.time) < Date.now() + 7 * 864e5).slice(0, 15);
   const news = (APP.news?.news || []).filter(n => n.currencies?.some(c => cur.includes(c))).slice(0, 10).map(n => ({ id: n.id, titre: n.title, source: n.source, heure: n.published_at, sentiment: n.sentiment ? { impacts: n.sentiment.currency_impacts, categorie: n.sentiment.categorie, heuristique: !!n.sentiment.heuristic } : null }));
-  return { paire: r.sym, prix: r.price, score: r.score, biais: r.bias, conviction: r.conviction, composants: r.components.map(c => ({ nom: c.key, valeur: c.value == null ? null : Math.round(c.value), brut: c.raw, source: c.source, raison_exclusion: c.reason })), niveaux: r.levels, evenements_a_venir: ev.map(e => ({ id: e.id, devise: e.currency, titre: e.title, impact: e.impact, heure: e.time, prevision: e.forecast, precedent: e.previous })), news, risques: r.risks, sources: { prix: r.source, calendrier: APP.cal?.source, news: Object.keys(APP.news?.sources_status || {}).filter(k => APP.news.sources_status[k].ok) }, horodatages: { historique: APP.hist[r.sym]?.fetched_at, calendrier: APP.cal?.fetched_at, news: APP.news?.fetched_at }, qualite_des_donnees: r.reliability };
+  return { paire: r.sym, prix: r.price, score: r.score, biais: r.bias, conviction: r.conviction, composants: r.components.map(c => ({ nom: c.key, valeur: c.value == null ? null : Math.round(c.value), brut: c.raw, source: c.source, raison_exclusion: c.reason })), niveaux: r.levels, evenements_a_venir: ev.map(e => ({ id: e.id, devise: e.currency, titre: e.title, impact: e.impact, heure: e.time, prevision: e.forecast, precedent: e.previous })), news, risques: r.risks, sources: { prix: r.source, calendrier: APP.cal?.source, news: Object.keys(APP.news?.sources_status || {}).filter(k => APP.news.sources_status[k].ok) }, horodatages: { historique: APP.hist[r.sym]?.fetched_at, calendrier: APP.cal?.fetched_at, news: APP.news?.fetched_at }, qualite_des_donnees: r.reliability, plan_calcule: rulesAnalysis(r).plan_de_trade };
 }
-const AI_SYS = `Tu es analyste macro Forex/Or. Réponds UNIQUEMENT par un objet JSON valide en français. Utilise UNIQUEMENT les chiffres du contexte fourni : n'invente ni prix, ni taux, ni dates ; signale les données manquantes ; sépare faits et interprétation ; chaque catalyseur cite l'id d'une news ou d'un événement fourni (source_id), sinon il porte "hypothese":true ; aucun conseil personnalisé. Schéma : {"resume":"","biais":"","conviction":0,"scenario_principal":{"description":"","declencheurs":[],"invalidation":""},"scenario_alternatif":{"description":"","declencheurs":[],"invalidation":""},"niveaux":{"supports":[],"resistances":[]},"catalyseurs":[{"texte":"","source_id":"","hypothese":false}],"risques":[],"correlations":[],"plan_de_trade":{"zone_entree":"","stop":"","objectifs":[],"risque_pct":0},"horizon":"","qualite_des_donnees":""}`;
+const AI_SYS = `Tu es analyste macro Forex/Or. Réponds UNIQUEMENT par un objet JSON valide en français. Utilise UNIQUEMENT les chiffres du contexte fourni : n'invente ni prix, ni taux, ni dates ; signale les données manquantes ; sépare faits et interprétation ; chaque catalyseur cite l'id d'une news ou d'un événement fourni (source_id), sinon il porte "hypothese":true ; aucun conseil personnalisé ; pour plan_de_trade, reprends plan_calcule du contexte (calculé à partir de l'ATR) sans inventer d'autres niveaux. Schéma : {"resume":"","biais":"","conviction":0,"scenario_principal":{"description":"","declencheurs":[],"invalidation":""},"scenario_alternatif":{"description":"","declencheurs":[],"invalidation":""},"niveaux":{"supports":[],"resistances":[]},"catalyseurs":[{"texte":"","source_id":"","hypothese":false}],"risques":[],"correlations":[],"plan_de_trade":{"zone_entree":"","stop":"","objectifs":[],"risque_pct":0},"horizon":"","qualite_des_donnees":""}`;
 function rulesAnalysis(r) { // secours sans IA, mêmes champs
   const up = r.bias === 'Haussier', dn = r.bias === 'Baissier', L = r.levels, p = r.price, atr = L.atr || 0;
   const missing = r.components.filter(c => c.value == null).map(c => `${c.key} (${c.reason})`);
@@ -577,11 +578,11 @@ function rulesAnalysis(r) { // secours sans IA, mêmes champs
 }
 function renderAnalysis(a, meta) {
   const L = x => Array.isArray(x) ? `<ul>${x.map(i => `<li>${esc(txt(i))}</li>`).join('')}</ul>` : esc(txt(x)), sc = (t, o) => o ? `<div class="card"><b>${t}</b><p>${esc(txt(o.description))}</p>${o.declencheurs?.length ? '<i>Déclencheurs</i>' + L(o.declencheurs) : ''}<p class="mu">Invalidation : ${esc(txt(o.invalidation))}</p></div>` : '';
-  const pl = a.plan_de_trade || {};
+  const pl = a.plan_de_trade || {}, nums = x => (String(txt(x)).match(/-?\d+[.,]?\d*/g) || []).map(toNum), e0 = nums(pl.zone_entree)[0], s0 = nums(pl.stop)[0], t0 = nums(Array.isArray(pl.objectifs) ? pl.objectifs[0] : pl.objectifs)[0], rr = (e0 != null && s0 != null && t0 != null && e0 !== s0) ? Math.abs(t0 - e0) / Math.abs(e0 - s0) : null;
   return `<div class="warn">${esc(meta.label)}</div><div class="card"><b>Résumé</b> — ${esc(txt(a.biais))} (conviction ${esc(txt(a.conviction))})<p>${esc(txt(a.resume))}</p></div>
   <div class="grid">${sc('Scénario principal', a.scenario_principal)}${sc('Scénario alternatif', a.scenario_alternatif)}
   <div class="card"><b>Catalyseurs</b>${L((a.catalyseurs || []).map(c => typeof c === 'object' ? c.texte + (c.hypothese || !c.source_id ? ' [hypothèse]' : ' [' + c.source_id + ']') : c))}<b>Risques</b>${L(a.risques || [])}<b>Corrélations</b>${L(a.correlations || [])}</div>
-  <div class="card"><b>Plan (indicatif)</b><p>Entrée : ${esc(txt(pl.zone_entree))}<br>Stop : ${esc(txt(pl.stop))}<br>Objectifs : ${esc(txt(pl.objectifs))}<br>Risque : ${esc(txt(pl.risque_pct))} %<br>Horizon : ${esc(txt(a.horizon))}</p><p class="mu">Données : ${esc(txt(a.qualite_des_donnees))}</p></div></div>
+  <div class="card"><b>Plan (indicatif)</b><p>Entrée : ${esc(txt(pl.zone_entree))}<br>Stop : ${esc(txt(pl.stop))}<br>Objectifs : ${esc(txt(pl.objectifs))}<br>Risque : ${esc(txt(pl.risque_pct))} %<br>Horizon : ${esc(txt(a.horizon))}${rr == null ? '' : `<br>Ratio gain/risque : ${rr.toFixed(2)}${rr < 1 ? ' <span class="badge na">défavorable : plan à revoir</span>' : ''}`}</p><p class="mu">Données : ${esc(txt(a.qualite_des_donnees))}</p></div></div>
   <button class="btn" data-act="copyAI">Copier</button> <button class="btn" data-act="saveAI">Enregistrer au journal</button>
   <div class="warn">Aide à l'analyse, pas un conseil en investissement. Les scores sont un modèle heuristique.</div>`;
 }
