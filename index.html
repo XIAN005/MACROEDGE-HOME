@@ -362,7 +362,7 @@ function eventRisk(sym, events, news, now) {
 
 /* ---- fiabilité des données ---- */
 function reliability(hist, comps) {
-  const missing = comps.filter(c => c.value == null).length;
+  const missing = comps.filter(c => c.value == null && !/non applicable/.test(c.reason || '')).length;
   if (hist.stale || missing >= 3) return { label: 'basse', q: 0.4 };
   if (/frankfurter|stooq/.test(hist.source) || hist.age_minutes > 1440 || missing >= 2) return { label: 'moyenne', q: 0.7 };
   return { label: 'haute', q: 1 };
@@ -385,7 +385,7 @@ function computePair(sym, hist, ctx) {
   const used = comps.filter(c => c.value != null && c.weight > 0), agree = used.filter(c => Math.sign(c.value) === Math.sign(score) || c.value === 0).reduce((a, c) => a + c.weight, 0) / (used.reduce((a, c) => a + c.weight, 0) || 1);
   const ev = eventRisk(sym, ctx.events, ctx.news || [], now), rel = reliability(hist, comps), risks = [...ev.risks];
   if (str.noDirection) risks.push('Marché sans direction (volatilité faible, range)');
-  comps.filter(c => c.value == null && c.weight > 0).forEach(c => risks.push(`Composant exclu « ${c.key} » : ${c.reason}`));
+  comps.filter(c => c.value == null && c.weight > 0 && !/non applicable/.test(c.reason || '')).forEach(c => risks.push(`Composant exclu « ${c.key} » : ${c.reason}`));
   let conv = (0.6 * Math.abs(score) + 0.4 * agree * 100) * (str.noDirection ? 0.85 : 1) - ev.penalty;
   conv = Math.round(clamp(conv, 0, 100));
   const hi = (n) => Math.max(...cdl.slice(-n).map(c => c.high)), lo = (n) => Math.min(...cdl.slice(-n).map(c => c.low)), s50 = SMA(cdl.map(c => c.close), 50);
